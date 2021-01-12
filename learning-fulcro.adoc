@@ -25,7 +25,8 @@ WARNING: Very much a work in progress
    * Notice that the Book is essentially reference material and covers many areas and depth that you don’t need to get a general understanding of Fulcro
 3. If you are a visual person, have a look at the https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos] - especially Parts 1 to 7 cover many of the pitfalls of getting started (Alex Eeberts' https://github.com/aeberts/fulcro-notes-public[Fulcro Video Notes (i.e. table of content)] might be helpful)
 4. Clone and play with https://github.com/fulcrologic/fulcro-template/[fulcro-template]
-5. `recur`
+5. Revisit https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] and the tutorials and troubleshooting materials it links to to check whether some of it isn't what you need just now
+6. `recur`
 
 > *FAQ: What about Fulcro Rapid Application Development (RAD)?*
 >
