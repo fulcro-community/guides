@@ -1,0 +1,27 @@
+# Guide to learning Fulcro
+
+NOTE: Under development
+
+There is plenty of materials - the excellent, comprehensive https://book.fulcrologic.com/[Fulcro Developers Guide], many hours of the invaluable https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos], https://github.com/wilkerlucio/pathom[Pathom] documentation, and various https://github.com/fulcro-community/awesome-fulcro#learning[learning resources from awesome-fulcro]. Then there is RAD and its documentation. It is overwhelming. Everybody will wonder:
+
+> *Where to start? How to go about learning Fulcro?*
+
+We hope this guide will be of help.
+
+## Essential guidelines for learners
+
+Different people learn best in different ways so there is no single, best way to learn Fulcro. Somebody likes to study a lot first, somebody prefers to jump into doing as soon as possible. We will try to cater to them all. However, no matter what kind of person you are, here is one important recommendation that applies to you all:
+
+IMPORTANT: Fulcro is likely very different from anything you have used before. You need to really *understand the key concepts first*, before trying to create something. Otherwise you set yourself up for many struggles.
+
+## Where to start?
+
+### Recommended approach
+
+WARNING: Very much a work in progress
+
+1. Have a brief look at https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] so that you get an overview of what is available and can back to particular resources when you will need them
+2. Read the beginning of https://book.fulcrologic.com/[Fulcro Developers Guide], at least up to and including "4. Getting Started"
+3. If you are a visual person, have a look at the https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos]
+4. Clone and play with https://github.com/fulcrologic/fulcro-template/[fulcro-template]
+5. `recur`
