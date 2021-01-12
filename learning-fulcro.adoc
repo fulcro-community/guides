@@ -1,6 +1,6 @@
 # Guide to learning Fulcro
 
-NOTE: Under development
+NOTE: Under development. You can https://docs.google.com/document/d/1XMWwwnxtukZ0o3ev4GH2Kpa8MvX4z-r4kYKJMaMBw2A/edit?usp=sharing[edit or comment on the shared document] that will be fed back up to this page.
 
 There is plenty of materials - the excellent, comprehensive https://book.fulcrologic.com/[Fulcro Developers Guide], many hours of the invaluable https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos], https://github.com/wilkerlucio/pathom[Pathom] documentation, and various https://github.com/fulcro-community/awesome-fulcro#learning[learning resources from awesome-fulcro]. Then there is RAD and its documentation. It is overwhelming. Everybody will wonder:
 
