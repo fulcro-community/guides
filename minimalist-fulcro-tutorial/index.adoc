@@ -17,7 +17,7 @@ The goal is to enable you to read, understand, and tinker with the code of a Ful
 
 ## Prerequisities
 
-This tutorial expects that you have went through the *EQL Tutorial* and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have an idea about Pathom and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
+This tutorial expects that you have went through the *EQL Tutorial* and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have an idea about *Pathom* and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
 
 It also assumes that you are already familiar with *React* and thus with concepts such as components, factories, elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
@@ -35,9 +35,9 @@ Fulcro is a full-stack web framework. These are the main components:
 image::fulcro-system-view.svg[Fulcro system view,420,190]
 
 . Frontend
-.. _UI_ - Fulcro/React components render a DOM and submit mutations to the transaction (Tx) subsystem
+.. _UI_ - Fulcro/React components render a DOM and submit mutations (= action name + parameters) to the transaction (Tx) subsystem
 .. _Tx_ (transaction subsystem) - asynchronously executes local mutations and sends remote mutations and queries to the remote backend
-.. _Client DB_ - data from the backend is _normalized_ into the client-side DB (cache); _Tx_ typically schedules a re-render afterwards
+.. _Client DB_ - data from the backend is _normalized_ into the client-side DB (data cache); _Tx_ typically schedules a re-render afterwards
 . Backend
 .. _Pathom_ receives EQL queries and mutations and responds with a data tree
 
@@ -46,11 +46,11 @@ image::fulcro-system-view.svg[Fulcro system view,420,190]
 We will briefly describe the key terms we are going to use a lot. Some are later explained in more detail.
 
 App::
-A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component `this` is not available.
+A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component `this` is not available. Referred to as `app` in code samples.
 Client DB::
-The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`).
+The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`). (For convenience, we use the name of the id property as the "name" of the entity - thus `:person/id`, `:user/username`.) It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
 Component::
-A Fulcro component is a React component with extra meta data.
+A Fulcro component is a React component with extra meta data, such as _query_ and _ident_.
 EQL (EDN Query Language) server::
 The backend includes an EQL server - Pathom - that can process EQL queries and mutations and respond with data (nested, tree-shaped).
 Ident::
@@ -58,13 +58,15 @@ Data: the identifier of a data entity composed of the ID property name and value
 Mutation::
 When components want to "change" something, they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. A request to load data from the backend is also a mutation (on the Fulcro side; to Pathom it is sent as a plain EQL query). Remote mutations are sent as EQL mutations.
 Normalization of data::
-Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only their _idents_.
+Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only their _idents_. The normalization depends on components declaring their idents.
 Query::
-Each stateful component declares what data it needs using an EQL query. If it has stateful children, it also includes their query in its own.
+Each stateful component declares what data it needs using an EQL query (or rather query fragment). If it has stateful children, it also includes their query in its own.
+Resolver, Pathom::
+A Pathom resolver takes typically 0 or 1 inputs and optional parameters and outputs a tree of properties. F.ex. an input-less resolver can declare: `::pc/output [{:all-blogs [:blog/id :blog/title :blog/content]}]` and return `{:all-blogs [{:blog/id 1, ..}, ..]}`. Thus any query that asks for `:all-blogs` can be "parsed" and answered.
 Root component::
 The top component of the UI, customary called `Root`.
 Transaction subsystem::
-Components submit mutations to the transaction subsystem for execution. You can think of it as an asnychronous queue.
+Components submit mutations to the transaction subsystem for execution with `transact!`. You can think of it as an asnychronous queue.
 
 ### Fulcro lifecycle
 
@@ -77,7 +79,7 @@ The core of the Fulcro lifecycle is simple:
 
 . Something happens that requires a refresh of the UI, e.g. mounting the Root component, loading data from the backend, or receiving a data response from a mutation submitted to the backend
 .. When data arrives from the backend:
-... Get the query from the relevant component (often Root)
+... Get the query from the relevant component (f.ex. `MyBlogList`)
 ... Use the query to _normalize_ the data into the client DB
 . Fulcro asks the Root component for its query (which _includes the queries of its children_ and thus describes all the data the whole page needs)
 . Fulcro uses the query and the client DB to construct the props data tree for the Root component
@@ -87,7 +89,7 @@ The core of the Fulcro lifecycle is simple:
 
 You will learn:
 
-* How a Fulcro component defines a React component class
+* That a Fulcro component defines a React component class
 * How a component query declares its data needs
 * How a component ident is used to normalize its data to avoid duplication (and simplify data updates)
 * How `transact!` is used to submit mutations from the UI
@@ -96,7 +98,7 @@ You will learn:
 
 ### The anatomy of a Fulcro component: query, ident, body
 
-A Fulcro component, which is also a React component, is the heart of a Fulcro application. Let's explore it:
+Fulcro components, which are also React components, are the heart of a Fulcro application. Let's explore them:
 
 .A Fulcro component
 ====
@@ -105,9 +107,9 @@ A Fulcro component, which is also a React component, is the heart of a Fulcro ap
 (defsc Person 
   [this {:person/keys [fname email address] :as props}]
   {:query [:person/id :person/fname :person/email 
-           {:person/address (comp/get-query Address)}] ; <1>
-   :ident (fn [] [:person/id (:person/id props)])} ; <2>
-  (div ; <3>
+           {:person/address (comp/get-query Address)}]
+   :ident (fn [] [:person/id (:person/id props)])}
+  (div
     (p "Name: " fname ", email: " email)
     (ui-address address)))
 
@@ -125,21 +127,23 @@ _(Assume the {url-book}#_common_prefixes_and_namespaces[same `:require` aliases 
   <body to be rendered>)
 ```
 
-Notice that `defsc` produces a JS class, which we turn into a factory with `comp/factory` (customary we kebab-case its name and prefix it with `ui-`). The factory can then be used to create React elements (as is demonstrated with the `ui-address` factory). (JSX does this for you so that you can use classes directly. Here we want more control.)
+Notice that `defsc` produces a JS _class_, which we turn into a React factory with `comp/factory` (customary we kebab-case its name and prefix it with `ui-`). The factory can then be used to create React elements (as is demonstrated with the `ui-address` factory). (JSX does this for you so that you can use classes directly. Here we want more control.)
+
+Also notice that `:query` and props mirror each other.
 
 #### Component's `:query`
 
 *The query declares what props the component needs, _including_ the needs of its child components.* (We saw how `Person` includes the query of `Address` via `comp/get-query`.)
 
-Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ of the component's properties and a child components' queries.
+Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
 
 *TODO: importance of get-query vs. DIY*
 
-Fulcro combines the query and the client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. How does the data get into the client database, you ask? See *data initialization and loading [TODO]*.
+Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. How does the data get into the client database, you ask? See the discussion of `load!` later on.
 
 *TODO Diagram of components <> query <> data tree*
 
-TIP: Don't be mislead, the query is not a standalone query that could be "run" directly against the database (as you know from SQL or re-frame subscriptions). It is rather a _query fragment_, which only makes sense in the context of its parent's query. Only the root componet's properties are resolved directly against the client database or, when `load!`-ed, against global Pathom resolvers.
+TIP: Don't be mislead, the query is not a standalone query that could be "run" directly against the database (as you know from SQL or re-frame subscriptions). It is rather a _query fragment_, which only makes sense in the context of its parent's query. Only the root componet's properties are resolved directly against the client database or, when `load!`-ed, against global Pathom resolvers. A query such as `[:person/id :person/fname]` is meaningless on its own - which person? Only in the context of a parent, such as `[{:all-people [<insert here>]}]` (in an imaginary `AllPeopleList` component) does it make sense.
 
 #### Component's `:ident`
 
@@ -147,19 +151,21 @@ For a _data entity_, ident(ifier) is akin to a self-contained foreign key in SQL
 
 For a _component_, its `:ident` is a function that returns the ident of the associated data entity, typically based on its props (captured from the component's arguments): `(fn [] [:person/id (:person/id props)])`. (We could simplify the whole thing to `:person/id` using the {url-book}#_keyword_idents[keyword ident form] but we can ignore that for now.) 
 
-For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `[:component/id :MySingletonComponent]`.
+For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `[:component/id :AllPeopleList]`.
 
 *Why* do we need component idents? To tell Fulcro what is the ID property of an entity so that it can _normalize_ its data into the client database.
 
 #### Component's `:initial-state`
 
-*TODO*
+A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare data that should be inserted into the client DB when the application is mounted for the first time. You can use it to define the state of the application before any data is loaded from the server-side.
+
+*TODO (briefly!) when this is worthwile / necessary*
 
 #### Rendering DOM: the body of a component
 
-The body of the `defsc` macro becomes the `render` function of the React element.
+The body of the `defsc` macro becomes the `render` method of the React class.
 
-Instead of JSX, we use functions from the https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/dom.cljs[`dom` namespace] for HTML tags and React factories for React components.
+Instead of JSX, we use functions from the https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/dom.cljs[`dom` namespace] for rendering HTML tags and React factories for rendering React components.
 
 This is what a complete call looks like:
 
@@ -180,21 +186,21 @@ The signature is:
 
 ```clojure
 (dom/<tag>
-  <[optional] keyword encoding classes and element ID> ; <1>
+  <[optional] keyword encoding classes and an element ID> ; <1>
   <[optional] map of the tag's attributes (or React props)>; <2>
   <[optional] children>) ; <3>
 ```
 <1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to `{:classes [<class name> ...], :id <id>}`.
 <2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class name, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
-<3> One or more children
+<3> Zero or more children
 
 ##### Additional notes
 
 Returning multiple elements from the body::
 To return multiple child elements, wrap them either in a Clojure sequence or `comp/fragment`. React demands that every one must have a unique `:key`. Ex.: `(defsc X [_ _] [(dom/p {:key "a"} "a") (dom/p {:key "b"} "b")])`.
 
-Assigning unique `:key` to every instance of a component::
-If a Fulcro component is being rendered in a sequence, f.ex. because you do something like `(map ui-employee (:department/employees props))`, it must have a unique `:key` prop. The `comp/factory` takes a map of options where you can specify a function of the component's props that will return a unique key:
+Assigning a unique `:key` to every instance of a component::
+If a Fulcro component is being rendered in a sequence, f.ex. because you do something like `(map ui-employee (:department/employees props))`, it must have a unique `:key` prop. Leverage the second, optional argument to `comp/factory` to specify a function of the component's props that will return the unique key:
 +
 ```clojure
 (def ui-employee (comp/factory Employee {:keyfn :employee/id}))
@@ -213,14 +219,14 @@ It is similar, only instead of `comp/factory` {url-book}#_factory_functions_for_
 
 When a component needs to change something outside of itself, it does so through submitting _mutations_ to the transaction subsystem via `comp/transact!`.
 
-Mutations can be local (client-side) only or local and remote (though there does not need to be any local behavior to be defined). Even though mutation usage looks like a function call, it is not. What `transact!` expects is a sequence of _data_:
+Mutations can be local (client-side) only or local and remote (though there does not need to be any local behavior defined). Even though mutation usage looks like a function call, it is not. What `transact!` expects is a sequence of _data_:
 
 ```clojure
 (comp/transact! app-or-component 
   [(<fully qualified symbol> <params map>), ...])
 ```
 
-That is so that the mutation can be submitted over the wire to the backend as-is. Of course both Fulcro and Pathom expect that there is actually a `defmutation` corresponding to the provided "fully qualified symbol". So how do we define a mutation?
+That is so that the mutation can be submitted over the wire to the backend as-is. Of course both Fulcro and Pathom expect that there actually is a `defmutation` corresponding to the provided "fully qualified symbol". So how do we define a mutation on the client and server side? (Assuming standard Fulcro and {url-pathom}/introduction.html#_aliases_used_in_code_examples[Pathom namespace aliases].)
 
 .A Fulcro mutation
 ====
@@ -228,31 +234,31 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 #?(:cljs 
     ;; client-side
     (m/defmutation delete-employee [{id :employee/id :as params}] ; <1>
-      (action [{:keys [app state] :as env}] ; <2>
+      (action [{:keys [app state] :as env}]          ; <2>
         (swap! state update :employee/id dissoc id))
-      (remote [env] true) ; <3>
-      (ok-action [{:keys [app state result]}] ; <4>
+      (remote [env] true)                            ; <3>
+      (ok-action [{:keys [app state result]}]        ; <4>
         (println "It worked!")))
-   :clj 
-     ;; server-side
-     (pc/defmutation delete-employee [env {id :employee/id :as params}]) ; <5>
-       {::pc/params #{:employee/id}}
-       (db/delete-employee id)
-       nil))
+  :clj 
+    ;; server-side
+    (pc/defmutation delete-employee [env {id :employee/id :as params}]) ; <5>
+      {::pc/params #{:employee/id}}
+      (db/delete-employee id)
+      nil))
 
 ;; Somewhere in a component:
-(comp/transact this [(delete-employee {:employee/id id})]) ; <6>
+(comp/transact! this [(delete-employee {:employee/id id})])   ; <6>
 ;; or:
-(comp/transact this `[(delete-employee {:employee/id ~id})]) ; <7>
+(comp/transact! this `[(delete-employee {:employee/id ~id})]) ; <7>
 ```
 ====
-<1> The client-side mutation takes a map of parameters (see (6) for usage) and has 0+ of the function-like optional parts
+<1> The client-side mutation takes a map of parameters (see (6) for usage) and has zero or more named parts that look like protocol method implementations
 <2> `action` is what should happen first. Here we can directly change the client DB (`state`, an atom)
-<3> if `remote` is present and returns something truthy, then the mutation is also send to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation will return.
-(Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here actions for them.)
-<4> `ok-action` is called after a remote mutation succeeded. Notice that in Fulcro mutations and queries are generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail"] and rather return data indicating that something went wrong. Here you can submit other mutations etc.
+<3> if `remote` is present and returns something truthy, then the mutation is also send to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation returns. Omit for a client-side-only mutation.
+(Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here sections for those.)
+<4> `ok-action` is called after the remote mutation succeeds. Notice that in Fulcro mutations and queries generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail" and rather return data] indicating that something went wrong. You can submit other mutations etc. from here.
 <5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of data store.
-<6> We submit a transaction using `transact!` and passing in the params. We can call the mutation as a function, which will simply return its name as a symbol (and the params map)
+<6> As demonstrated, we submit a mutation for processing using `comp/transact!` and passing in the params. We can call the mutation as a function, which will simply return its name as a symbol (and the params map)
 <7> ...or we provide the symbol directly
 
 #### transact!-ing multiple mutations
@@ -261,7 +267,7 @@ If you `transact!` multiple mutations then their `action` will be processed _in 
 
 ### ``load!``-ing data
 
-How do we get load data from the server to the client DB? `df/load!` to the rescue! (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you want to load.)
+How do we load data from the server into the client DB? `df/load!` to the rescue! (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
 
 This is a huge topic because there is lot of conveniences baked in. We will cover the most important parts and hint at the others.
 
@@ -274,13 +280,13 @@ The signature of `load!` is:
           options)         ; <4>
 ```
 <1> Pass in a reference to the Fulcro `app` or a component's `this` (the  first argument of `defsc`)
-<2> Specify the server-side property (attribute) that Pathom can resolve - either a keyword, i.e. a property name output by a global Pathom resolver or an ident
-<3> The component whose query defines which of the available properties to get. (We do pass in the component and not the query itself because it has useful metadata, such as `:ident`.)
+<2> Specify the server-side property (attribute) that Pathom can resolve - either a keyword, i.e. a property name output by a global Pathom resolver, or an ident such as `[:person/id 1]`, supported by a Pathom resolver taking the corresponding input (e.g. `::pc/input #{:person/id}`)
+<3> The component whose query defines which of the available properties to get. (We do pass in the component and not the query itself because it has useful metadata, such as `:ident`, necessary for data normalization.)
 <4> `load!` takes plenty of options, a number of them very useful. We will explore those in more detail later.
 
-(Notice that `load!` will actually `transact!` a predefined mutation. It just provides a convenient wrapper around the mutation.)
+(Notice that `load!` will actually `transact!` a predefined mutation. It just provides a convenient wrapper around the mutation and common additional actions.)
 
-Couple of examples:
+A couple of examples:
 
 .load! variants
 ====
@@ -313,20 +319,34 @@ Couple of examples:
 <2> Load an entity by ident
 <3> Load an entity by ident and add a reference to another entity, leveraging the `:target` option and the helpers in te `targeting` namespace
 
-`load!` takes a number of options to customize and enhance its behavior. Refer to its docstring for a full description. The most used ones include:
+#### How to...
 
-* `:target` to add "edges" (references) to the loaded data into other parts of the client DB; check out the `com.fulcrologic.fulcro.algorithms.data-targeting` namespace for functions that help to add/remove references exactly where you want them
-* `:without` to exclude certain props from the query, presumably because you want to load them later with `df/load-field!` or load with `:focus`. Imagine you want to load Blog but exclude its Comments so that you can load them asynchronously or when the user scrolls down. See {url-book}#IncrementalLoading[Incremental Loading] for details.
-* `:marker` - track when data is loading / loaded / failed. See below.
-* `:post-mutation` and `:post-mutation-params` - if you want to trigger a mutation after a finished load, you can do so using these two
-* `:post-action` - called after the loading finished, can call `transact!`
-* `:params` - provide extra {url-pathom-resolvers}#_parameters[parameters to the target resolver] in Pathom
+Here we will learn how to solve a number of common needs by leveraging the rich set of options that `load!` supports. See its docstring for the full list and documentation.
+
+[qanda]
+How to provide params to parametrized Pathom resolvers?::
+Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load :current-user User {:params {:username u :password p}})`.
+
+How can I add a reference to the loaded data entity to another entity present in the client DB?::
+Use the `:target` option to add "edges" (references) to the newly loaded data into other parts of the client DB; check out the `com.fulcrologic.fulcro.algorithms.data-targeting` namespace for functions that help to add/remove references exactly where you want them. See the examples above for an example.
+
+How to exclude a costly prop(s) from being loaded?::
+Imagine you want to load a Blog entity but exclude its comments so that you can load them asynchronously or e.g. when the user scrolls down. You can leverage `:without` for that: `(load! app [:blog/id 42] Blog {:without #{:blog/comments}})`. Notice that it removes the property no matter how deep in the query it is so `(load! app :all-blogs BlogList {:without #{:blog/comments}})` will also do this. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading].
+
+How to load only a subtree of data (f.ex. the one excluded earlier with `:without`)?::
+The opposite of the `:without` option is the function `df/load-field!`, which loads 1+ props of a component. Inside the Blog component: `(df/load-field! this [:blog/comments] {})`. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading]. Alternatively, you can use the load! option `:focus`, which requires more work but is more flexible.
+
+How to track the loading status, i.e. loading x loaded x failed?::
+Use the option `:marker <your custom keyword>` to add a "marker" that will track the status for you. See the example below.
+
+How to execute a follow-up action after the load is finished?::
+What if you need to do an additional activity after the data arrives? You can use the options `:post-mutation`, optionally with `:post-mutation-params`, to submit a mutation. Or you can use the option `:post-action (fn [env] ..)`, which can call `transact!`.
 
 #### When to `load!`?
 
 When to call `load!`? The main options are:
 
-. When you {url-book}#_loading_something_into_the_db_root[application is starting]
+. When your {url-book}#_loading_something_into_the_db_root[application is starting]
 . In an event handler (e.g. onClick)
 . When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
 . When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
