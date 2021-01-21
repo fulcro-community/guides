@@ -2,7 +2,8 @@
 
 :url-book: https://book.fulcrologic.com/
 :url-eql: https://edn-query-language.org/
-:url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html#_parameters
+:url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
+:url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
 
 WARNING: Work in progress
 
@@ -248,6 +249,7 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 <1> The client-side mutation takes a map of parameters (see (6) for usage) and has 0+ of the function-like optional parts
 <2> `action` is what should happen first. Here we can directly change the client DB (`state`, an atom)
 <3> if `remote` is present and returns something truthy, then the mutation is also send to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation will return.
+(Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here actions for them.)
 <4> `ok-action` is called after a remote mutation succeeded. Notice that in Fulcro mutations and queries are generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail"] and rather return data indicating that something went wrong. Here you can submit other mutations etc.
 <5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of data store.
 <6> We submit a transaction using `transact!` and passing in the params. We can call the mutation as a function, which will simply return its name as a symbol (and the params map)
@@ -260,6 +262,8 @@ If you `transact!` multiple mutations then their `action` will be processed _in 
 ### ``load!``-ing data
 
 How do we get load data from the server to the client DB? `df/load!` to the rescue! (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you want to load.)
+
+This is a huge topic because there is lot of conveniences baked in. We will cover the most important parts and hint at the others.
 
 The signature of `load!` is:
 
@@ -309,12 +313,32 @@ Couple of examples:
 <2> Load an entity by ident
 <3> Load an entity by ident and add a reference to another entity, leveraging the `:target` option and the helpers in te `targeting` namespace
 
-*TODO load-markers, :target, :focus, :without, :marker, :post-mutation + :post-mutation-params,:post-action,...*
+`load!` takes a number of options to customize and enhance its behavior. Refer to its docstring for a full description. The most used ones include:
+
+* `:target` to add "edges" (references) to the loaded data into other parts of the client DB; check out the `com.fulcrologic.fulcro.algorithms.data-targeting` namespace for functions that help to add/remove references exactly where you want them
+* `:without` to exclude certain props from the query, presumably because you want to load them later with `df/load-field!` or load with `:focus`. Imagine you want to load Blog but exclude its Comments so that you can load them asynchronously or when the user scrolls down. See {url-book}#IncrementalLoading[Incremental Loading] for details.
+* `:marker` - track when data is loading / loaded / failed. See below.
+* `:post-mutation` and `:post-mutation-params` - if you want to trigger a mutation after a finished load, you can do so using these two
+* `:post-action` - called after the loading finished, can call `transact!`
+* `:params` - provide extra {url-pathom-resolvers}#_parameters[parameters to the target resolver] in Pathom
+
+#### When to `load!`?
+
+When to call `load!`? The main options are:
+
+. When you {url-book}#_loading_something_into_the_db_root[application is starting]
+. In an event handler (e.g. onClick)
+. When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
+. When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
+
+#### Bonus: Tracking loading state and result with load markers
+
+*TODO :load-markers*
 
 ### *TODO*: Other topics
 
 * `com.fulcrologic.fulcro.algorithms.merge` for adding/removing idents to lists, props
-* `com.fulcrologic.fulcro.algorithms.data-targeting`
+* pre-merge? (rather not...)
 
 ## FAQ
 
