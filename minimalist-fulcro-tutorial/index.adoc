@@ -157,7 +157,7 @@ For _singleton components_ we use, by convention, the "property name" `:componen
 
 #### Component's `:initial-state`
 
-A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare data that should be inserted into the client DB when the application is mounted for the first time. You can use it to define the state of the application before any data is loaded from the server-side.
+A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare the props it wants to get passed on the first "frame", i.e. the first render. The data will be normalized based on idents and stored into the client DB. You can use it to define the state of the application before any data is loaded from the server-side.
 
 *TODO (briefly!) when this is worthwile / necessary*
 
@@ -258,7 +258,7 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 (Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here sections for those.)
 <4> `ok-action` is called after the remote mutation succeeds. Notice that in Fulcro mutations and queries generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail" and rather return data] indicating that something went wrong. You can submit other mutations etc. from here.
 <5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of data store.
-<6> As demonstrated, we submit a mutation for processing using `comp/transact!` and passing in the params. We can call the mutation as a function, which will simply return its name as a symbol (and the params map)
+<6> As demonstrated, we submit a mutation for processing using `comp/transact!` and passing in the params. We can call the mutation as a function, which will simply return the call as data (example: `(my-mutation {x: 1})` -> `'(my.ns/my-mutation {x: 1})`)
 <7> ...or we provide the symbol directly
 
 #### transact!-ing multiple mutations
@@ -266,6 +266,8 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 If you `transact!` multiple mutations then their `action` will be processed _in order_. However, if they have a remote part, Fulcro does only send it but does not wait for it to finish before going on to process the next mutation. If you want to only issue a follow-up mutation after the remote part of the initial mutation has finished, do so from its `ok-action`.
 
 ### ``load!``-ing data
+
+*TODO: Talk about merge-component! first, since it is a load! without networking. Then it is easier to explain that load is just merge-component that obtains data from the remote.*
 
 How do we load data from the server into the client DB? `df/load!` to the rescue! (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
 
