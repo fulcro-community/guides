@@ -17,11 +17,11 @@ The goal is to enable you to read, understand, and tinker with the code of a Ful
 
 ## Prerequisities
 
-This tutorial expects that you have went through the *EQL Tutorial* and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have an idea about *Pathom* and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
+This tutorial expects that you have went through the *EQL Tutorial* and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
 
-It also assumes that you are already familiar with *React* and thus with concepts such as components, factories, elements, a tree of components, passing "props" from the root component, UI as a function of data.
+It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
-It is helpful to know a little about the principles of *GraphQL*.
+It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into "why").
 
 ## A word of warning
 
