@@ -1,7 +1,7 @@
 # Minimalist Fulcro Tutorial
 
 :url-book: https://book.fulcrologic.com/
-:url-eql: https://edn-query-language.org/
+:url-eql: https://edn-query-language.org/eql/1.0.0
 :url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
 :url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
 
@@ -17,15 +17,15 @@ The goal is to enable you to read, understand, and tinker with the code of a Ful
 
 ## Prerequisities
 
-This tutorial expects that you have went through the *EQL Tutorial* and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
+This tutorial expects that you have gone through the {url-eql}/what-is-eql.html#_eql_for_selections[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
 
 It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
-It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into "why").
+It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and perhaps also this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into the vlue proposition of GraphQL and EQL).
 
 ## A word of warning
 
-Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). It is most advisable that you familiarize yourself well with its key concepts.
+Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). It is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well.
 
 ## An overview of Fulcro
 
@@ -43,26 +43,26 @@ image::fulcro-system-view.svg[Fulcro system view,420,190]
 
 ### Key concepts and elements
 
-We will briefly describe the key terms we are going to use a lot. Some are later explained in more detail.
+We will briefly describe the key terms we are going to use a lot. Some are later explained in more detail. Skim over them and then come back to this section after having read about Fulcro lifecycle and whenever you are unsure what any of this terms means.
 
 App::
-A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component `this` is not available. Referred to as `app` in code samples.
+A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component's `this` is not available. Referred to as `app` in code samples.
 Client DB::
-The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`). (For convenience, we use the name of the id property as the "name" of the entity - thus `:person/id`, `:user/username`.) It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
+The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id value (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`). (For convenience, we use the name of the id property as the "name" of the entity - thus `:person/id`, `:user/username`.) It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
 Component::
 A Fulcro component is a React component with extra meta data, such as _query_ and _ident_.
 EQL (EDN Query Language) server::
 The backend includes an EQL server - Pathom - that can process EQL queries and mutations and respond with data (nested, tree-shaped).
 Ident::
-Data: the identifier of a data entity composed of the ID property name and value. Ex.: `[:person/id 123]`. Component: a function that returns an ident (discussed later).
-Mutation::
-When components want to "change" something, they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. A request to load data from the backend is also a mutation (on the Fulcro side; to Pathom it is sent as a plain EQL query). Remote mutations are sent as EQL mutations.
+_Of a data entity_: the identifier of a data entity composed of the ID property name and value. Ex.: `[:person/id 123]`. _Of a component_: a function that returns an ident (discussed later).
+Mutation (Fulcro)::
+When components want to "change" something, they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. In the context of Fulcro, a request to load data from the backend is also a mutation (while to Pathom it is sent as a plain EQL query). Remote mutations are sent as {url-eql}/specification.html#_mutations[EQL mutations].
 Normalization of data::
 Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only their _idents_. The normalization depends on components declaring their idents.
 Query::
-Each stateful component declares what data it needs using an EQL query (or rather query fragment). If it has stateful children, it also includes their query in its own.
+Each stateful component declares what data it needs using an EQL query (or rather a query fragment). If it has stateful children, it also includes their query in its own.
 Resolver, Pathom::
-A Pathom resolver takes typically 0 or 1 inputs and optional parameters and outputs a tree of properties. F.ex. an input-less resolver can declare: `::pc/output [{:all-blogs [:blog/id :blog/title :blog/content]}]` and return `{:all-blogs [{:blog/id 1, ..}, ..]}`. Thus any query that asks for `:all-blogs` can be "parsed" and answered.
+A Pathom resolver takes typically 0 or 1 inputs and optional parameters and outputs a tree of data. F.ex. an input-less resolver can declare: `::pc/output [{:all-blogs [:blog/id :blog/title :blog/content]}]` and return `{:all-blogs [{:blog/id 1, ..}, ..]}`. Thus any query that asks for `:all-blogs` can be "parsed" and answered.
 Root component::
 The top component of the UI, customary called `Root`.
 Transaction subsystem::
@@ -129,7 +129,7 @@ _(Assume the {url-book}#_common_prefixes_and_namespaces[same `:require` aliases 
 
 Notice that `defsc` produces a JS _class_, which we turn into a React factory with `comp/factory` (customary we kebab-case its name and prefix it with `ui-`). The factory can then be used to create React elements (as is demonstrated with the `ui-address` factory). (JSX does this for you so that you can use classes directly. Here we want more control.)
 
-Also notice that `:query` and props mirror each other.
+Also notice that `:query` and props mirror each other. Fulcro will actually warn you if there is a mismatch between the two, thus preventing many errors.
 
 #### Component's `:query`
 
@@ -137,7 +137,7 @@ Also notice that `:query` and props mirror each other.
 
 Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
 
-*TODO: importance of get-query vs. DIY*
+Beware: You must not copy and paste the child's query directly but rather use `(comp/get-query <Child>)` as demonstrated. Both for DRY and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
 
 Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. How does the data get into the client database, you ask? See the discussion of `load!` later on.
 
@@ -191,7 +191,7 @@ The signature is:
   <[optional] children>) ; <3>
 ```
 <1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to `{:classes [<class name> ...], :id <id>}`.
-<2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class name, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
+<2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class names, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
 <3> Zero or more children
 
 ##### Additional notes
@@ -204,7 +204,7 @@ If a Fulcro component is being rendered in a sequence, f.ex. because you do some
 +
 ```clojure
 (def ui-employee (comp/factory Employee {:keyfn :employee/id}))
-;; assuming the Employee component has the :epmployee/id prop
+;; assuming the Employee component has the (unique) :employee/id prop
 ```
 
 *TODO: computed props (for callbacks)*
@@ -254,10 +254,10 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 ====
 <1> The client-side mutation takes a map of parameters (see (6) for usage) and has zero or more named parts that look like protocol method implementations
 <2> `action` is what should happen first. Here we can directly change the client DB (`state`, an atom)
-<3> if `remote` is present and returns something truthy, then the mutation is also send to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation returns. Omit for a client-side-only mutation.
+<3> if `remote` is present and returns something truthy, then the mutation is also sent to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation returns. Omit for a client-side-only mutation.
 (Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here sections for those.)
 <4> `ok-action` is called after the remote mutation succeeds. Notice that in Fulcro mutations and queries generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail" and rather return data] indicating that something went wrong. You can submit other mutations etc. from here.
-<5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of data store.
+<5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of a data store.
 <6> As demonstrated, we submit a mutation for processing using `comp/transact!` and passing in the params. We can call the mutation as a function, which will simply return the call as data (example: `(my-mutation {x: 1})` -> `'(my.ns/my-mutation {x: 1})`)
 <7> ...or we provide the symbol directly
 
