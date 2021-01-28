@@ -267,23 +267,124 @@ If you `transact!` multiple mutations then their `action` will be processed _in 
 
 ### ``load!``-ing data
 
-*TODO: Talk about merge-component! first, since it is a load! without networking. Then it is easier to explain that load is just merge-component that obtains data from the remote.*
+### Preparation: Merging data into the client DB with `merge-component!`
 
-How do we load data from the server into the client DB? `df/load!` to the rescue! (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
+Before looking into loading remote data, we must understand how a (denormalized) tree of data can be merged and normalized into the client DB. There is no point in loading data unless we can put them into the client DB, the only place where Fulcro ever looks.
 
-This is a huge topic because there is lot of conveniences baked in. We will cover the most important parts and hint at the others.
+Given these two components:
+
+```clojure
+(defsc Address [_ _]
+  {:query [:address/id :address/street]
+   :ident :address/id})
+   ;; reminder: `:address/id` is a shorthand for
+   ;; (fn [:address/id (:address/id props)])
+
+(defsc Person [_ _]
+  {:query [:person/id :person/fname {:person/address (get-query Address)}]
+   :ident :person/id})
+```
+
+and this data:
+
+```clojure
+(def person-tree
+  {:person/id 1
+   :person/fname "Jo"
+   :person/address {:address/id 11
+                    :address/street "Elm Street 7"}})
+```
+
+we can merge the data into the client DB like this:
+
+```clojure
+(merge/merge-component!
+  app
+  Person
+  person-tree)
+```
+
+to get the following client DB:
+
+```clojure
+{:person/id  {1  {:person/id 1   :person/fname "Jo" :person/address [:address/id 11]}}
+ :address/id {11 {:address/id 11 :address/street "Elm Street 7"}}}
+```
+
+Notice that idents of both `Person` and `Address` were used to put the data in the correct "tables". If `Address` lacked an ident, its data would stay denormalized inside the person just as it is in the input data. (The top component passed to `merge-component!` always must have an ident.)
+
+After having modified the client DB, `merge-component!` will also schedule re-rendering of the UI.
+
+The signature of `merge-component!` is:
+
+```clojure
+(merge/merge-component!
+  app-or-component
+  <Component>
+  <data tree>
+  <[optional] key-value pairs of options>)
+```
+`merge-component!` gets the ident and query of the given component (and leverages the metadata on the child query fragments to get the other relevant idents, such as Address') and uses those to normalize the data into the DB. Notice that the data is really *merged* into the DB in a smart way and not just blindly overwriting it, i.e. pre-existing data is preserved (see the docstring for details).
+
+#### Targeting - Adding references to the new data to existing entities
+
+Now, what if we don't only want to add the data itself but also want to add reference(s) to the newly added data to some other, existing data entities in the client DB? `:append`, `:prepend`, and `:replace` to the rescue! We can specify as many of these as we want, providing full paths to the target property in the client DB. The paths have three (four, in the case of `:replace` of a to-many element) parts - entity name, entity ID value, the target property.
+
+.Data targetting: append, prepend, replace
+====
+```clojure
+;; Given an app with this client DB:
+(def app 
+  (app/fulcro-app
+    {:initial-db
+     {:list/id   {:friends    {:list/people [[:person/id :me]]}
+                  :partygoers {:list/people [[:person/id :me]]}}
+      :person/id {:me         {:person/id :me :person/fname "Me"
+                              :person/bff [[:person/id :me]]}}}}))
+
+;; and this call (reusing the person-tree defined earlier):
+(merge/merge-component!
+  app
+  Person
+  person-tree
+  :append  [:list/id :friends :list/people]
+  :prepend [:list/id :partygoers :list/people]
+  :replace [:person/id :me :person/bff 0]
+  :replace [:best-person])
+
+;; we get this Client DB:
+{:list/id
+ {:friends    {:list/people [[:person/id :me] [:person/id 1]]},  ; <1>
+  :partygoers {:list/people [[:person/id 1] [:person/id :me]]}}, ; <2>
+ :person/id
+ {:me #:person{:id :me, :fname "Me", :bff [[:person/id 1]]},     ; <3>
+  1   #:person{:id 1,   :fname "Jo", :address [:address/id 11]}},
+ :address/id {11 #:address{:id 11, :street "Elm Street 7"}},
+ :best-person [:person/id 1]}                                     ; <4>
+```
+====
+<1> `:append` inserts the ident of the data at the _last_ place of the target to-many property (vector of idents) (unless the vector already includes it anywhere)
+<2> `:prepend` inserts the ident of the data at the _first_ place of the target to-many property (vector of idents) (unless the vector already includes it anywhere)
+<3> `:replace` can replace an element of a to-many vector given a path ending with an index and provided it already exists
+<4> and `:replace` can also insert the ident at the given path (which even does not need to be an entity-id-property triplet)
+
+We have seen that in addition to merging data into the client DB we can also _append_ and _prepend_ references to it to to-many reference properties on other entities (such as `:list/people`), insert them into to-one properties with `:replace` etc. And we can do as many such operations as we want at once.
+
+#### Loading remote data
+
+Now that you understand the merging of data into the client DB, you can load data with `df/load!`, which is just `merge-component!` that - given a property or an ident that Pathom can resolve - obtains data from the remote. (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
 
 The signature of `load!` is:
 
 ```clojure
-(df/load! app-or-comp      ; <1>
-          keyword-or-ident ; <2>
-          component-class  ; <3>
-          options)         ; <4>
+(df/load! app-or-comp          ; <1>
+          src-keyword-or-ident ; <2>
+          component-class      ; <3>
+          options)             ; <4>
 ```
 <1> Pass in a reference to the Fulcro `app` or a component's `this` (the  first argument of `defsc`)
 <2> Specify the server-side property (attribute) that Pathom can resolve - either a keyword, i.e. a property name output by a global Pathom resolver, or an ident such as `[:person/id 1]`, supported by a Pathom resolver taking the corresponding input (e.g. `::pc/input #{:person/id}`)
-<3> The component whose query defines which of the available properties to get. (We do pass in the component and not the query itself because it has useful metadata, such as `:ident`, necessary for data normalization.)
+<3> The component whose query defines which of the available properties to get and that is used when merging the returned data with `merge-component!`.
 <4> `load!` takes plenty of options, a number of them very useful. We will explore those in more detail later.
 
 (Notice that `load!` will actually `transact!` a predefined mutation. It just provides a convenient wrapper around the mutation and common additional actions.)
@@ -294,7 +395,7 @@ A couple of examples:
 ====
 ```clojure
 ;; Assuming a global Pathom resolver `:all-people`
-;; (no ::pc/input and `::pc/output [:all-people [..]]`)
+;; (with `::pc/output [:all-people [..]]` and no ::pc/input)
 (df/load! app :all-people Person) ; <1>
 ;; => client db gets:
 ;; :all-people [[:person/id 1], [:person/id 2], ...]
@@ -307,7 +408,7 @@ A couple of examples:
 ;; :person/id {..., 123 {:person/id 123, :person/propX ".."}}
 
 ;; As above, but also adding the loaded entity to
-;; a list in a parent entity
+;; a list in a related entity
 (df/load! app [:employee/id 123] Employee ; <3>
   {:target (targeting/append-to [:department/id :sales :department/employees])})
 ;; => client db gets:
@@ -319,7 +420,7 @@ A couple of examples:
 ====
 <1> Load an entity or list of entities from a _global (input-less) resolver_
 <2> Load an entity by ident
-<3> Load an entity by ident and add a reference to another entity, leveraging the `:target` option and the helpers in te `targeting` namespace
+<3> Load an entity by ident and add a reference to another entity, leveraging the `:target` option and the helpers in the `targeting` namespace
 
 #### How to...
 
@@ -330,7 +431,7 @@ How to provide params to parametrized Pathom resolvers?::
 Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load :current-user User {:params {:username u :password p}})`.
 
 How can I add a reference to the loaded data entity to another entity present in the client DB?::
-Use the `:target` option to add "edges" (references) to the newly loaded data into other parts of the client DB; check out the `com.fulcrologic.fulcro.algorithms.data-targeting` namespace for functions that help to add/remove references exactly where you want them. See the examples above for an example.
+Similarly as with `merge-component!` but instead of specifying directly `:append`, `:prepend`, and `:replace`, you specify the `:target` option with a target from https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/algorithms/data_targeting.cljc[the `targeting` namespace] such as `(append-to <path>)`, `(prepend-to <path>)`, `(replace-at <path>)` or any combination of these by leveraging `(multiple-targets ...)`.
 
 How to exclude a costly prop(s) from being loaded?::
 Imagine you want to load a Blog entity but exclude its comments so that you can load them asynchronously or e.g. when the user scrolls down. You can leverage `:without` for that: `(load! app [:blog/id 42] Blog {:without #{:blog/comments}})`. Notice that it removes the property no matter how deep in the query it is so `(load! app :all-blogs BlogList {:without #{:blog/comments}})` will also do this. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading].
@@ -339,10 +440,10 @@ How to load only a subtree of data (f.ex. the one excluded earlier with `:withou
 The opposite of the `:without` option is the function `df/load-field!`, which loads 1+ props of a component. Inside the Blog component: `(df/load-field! this [:blog/comments] {})`. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading]. Alternatively, you can use the load! option `:focus`, which requires more work but is more flexible.
 
 How to track the loading status, i.e. loading x loaded x failed?::
-Use the option `:marker <your custom keyword>` to add a "marker" that will track the status for you. See the example below.
+Use the option `:marker <your custom keyword or data>` to add a "marker" that will track the status for you. See the example below.
 
 How to execute a follow-up action after the load is finished?::
-What if you need to do an additional activity after the data arrives? You can use the options `:post-mutation`, optionally with `:post-mutation-params`, to submit a mutation. Or you can use the option `:post-action (fn [env] ..)`, which can call `transact!`.
+What if you need to do an additional activity after the data arrives? You can use the options `:post-mutation`, optionally with `:post-mutation-params`, to submit a mutation. Or you can use the more flexible option `:post-action (fn [env] ..)`, which can call `transact!`.
 
 #### When to `load!`?
 
@@ -353,20 +454,43 @@ When to call `load!`? The main options are:
 . When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
 . When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
 
-#### Bonus: Tracking loading state and result with load markers
+#### Bonus: Tracking loading state with load markers
 
-*TODO :load-markers*
+You can ask `load!` to track the status of loading using a "load marker" and you can query for the marker to use it in your component. See the chapter {url-book}#_tracking_specific_loads[Tracking Specific Loads] in the book for details. A simple example:
 
-### *TODO*: Other topics
+.Tracking the status of a load! with a load marker
+====
+```clojure
+;; Somewhere during the app lifecycle:
+(df/load! [:list/id :friends] Person {:marker :friends-list}) ; <1>
 
-* `com.fulcrologic.fulcro.algorithms.merge` for adding/removing idents to lists, props
-* pre-merge? (rather not...)
+;; The component:
+(defsc FriendsList [_ props]
+  {:query [:list/people [df/marker-table :friends-list]]    ; <2>
+   :ident (fn [] [:list/id :friends])}
+  (let [marker (get props [df/marker-table :friends-list])] ; <3>
+    (cond
+      (df/loading? marker) (dom/div "Loading...")           ; <4>
+      (df/failed?  marker) (dom/div "Failed to load :-(")
+      :else (dom/div
+              (dom/h3 "Friends")
+              (map ui-person (:list/people props))))))
+```
+====
+<1> Ask `load!` to track the load with a marker called e.g. `:friends-list`
+<2> Add `[df/marker-table <your custom id>]` to your query to access the marker (notice that this is an _ident_ and will load the marker with the given ID from the Fulcro-managed marker table in the client DB)
+<3> Get the marker from the props. Notice this is `get` and not `get-in` because the whole ident is used as the key.
+<4> Use the provided functions to check the status of the load and display corresponding UI
+
+#### Briefly about pre-merge
+
+What if your component needs not only the data provided by the server but also some UI-only data to function properly? When you `load!` a new entity - for example `[:person/id 1]` - only the data returned from the backend will be stored into the client DB. If you need to enhance those data with some UI-only data before it is merged there - for example router or form state - you can do so {url-book}#_pre_merge[in its `:pre-merge`]. This is an advanced topic so we will not explore it here but you need to know that this is possible so that you know where to look when the time comes.
 
 ## FAQ
 
 [qanda]
 Can different components have the same ident?::
-Yes. Typically when these components are different views of the same data entity. So you could have a "person" entity and the components `PersonOverview` with `[:person/id :person/fname :person/image-small]` and `PersonDetails` with `[:person/id :person/fname :person/age :person/image-large]`.
+Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB.
 
 ## Next steps
 
