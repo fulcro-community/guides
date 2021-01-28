@@ -159,7 +159,12 @@ For _singleton components_ we use, by convention, the "property name" `:componen
 
 A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare the props it wants to get passed on the first "frame", i.e. the first render. The data will be normalized based on idents and stored into the client DB. You can use it to define the state of the application before any data is loaded from the server-side.
 
-*TODO (briefly!) when this is worthwile / necessary*
+When do you need to define initial state?
+
+* When you want to make sure that the component has particular props before any data is loaded from the backend
+* When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries]
+* When a child component has initial state (f.ex. dynamic routers do)
+* (?) When the component is used as a target of a dynamic router
 
 #### Rendering DOM: the body of a component
 
@@ -207,7 +212,26 @@ If a Fulcro component is being rendered in a sequence, f.ex. because you do some
 ;; assuming the Employee component has the (unique) :employee/id prop
 ```
 
-*TODO: computed props (for callbacks)*
+Passing additional ("computed") props from the parent::
+What if the parent needs to pass on some additional props other than those that come from the query resolution, for example callbacks? You should not just stick them into the props map because it would be then missing if Fulcro does a targeted re-render of just the child component. Instead, you should pass it on as _computed props_ either manually or leveraging `comp/computed-factory` and the optional third argument of `defsc`. This is demonstrated below:
++
+.Passing computed props
+====
+```clojure
+(defsc Person [this props {::keys [callback]}]
+ {..}
+ (dom/div
+   (dom/p "Person " (:person/name props))
+   (dom/button {:onClick callback} "Delete")))
+
+(def ui-person (comp/computed-factory Person))
+
+(defsc Parent [_ {:parent/keys [spouse]}]
+  {..}
+  (ui-person spouse {::callback #(js/alert "I won't give her up!")}))
+```
+====
+Read more in {url-book}#_passing_callbacks_and_other_parent_computed_data[Passing Callbacks and Other Parent-computed Data].
 
 ##### Note on raw React components
 
