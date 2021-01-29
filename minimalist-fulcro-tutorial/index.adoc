@@ -5,19 +5,17 @@
 :url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
 :url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
 
-WARNING: Work in progress
-
-.FIXME
---
-* Clarify the confusion around ``transact!``-ed mutations (transactions?) - which can include `load!` vs. EQL mutations and Fulcro mutations vs. EQL/server mutations.
---
+.Help us improve!
+****
+Please help me to improve this tutorial. If you find anything that can/should be removed, or something unclear, or have any other comment or suggestion, please do not hesitate to ping `@holyjak` in https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro at the Clojurians] Slack (or https://clojurians.zulipchat.com/#narrow/pm-with/214497-user214497[Zulip]).
+****
 
 This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY. For the latter, read the awesome {url-book}[Fulcro Developers Guide], especially the introductory chapters 2-4.
 The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
 
 ## Prerequisities
 
-This tutorial expects that you have gone through the {url-eql}/what-is-eql.html#_eql_for_selections[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). 
+This tutorial expects that you have gone through {url-eql}/what-is-eql.html#_eql_for_selections[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). (But you don't need to care about Pathom readers.)
 
 It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
@@ -133,6 +131,15 @@ Also notice that `:query` and props mirror each other. Fulcro will actually warn
 
 #### Component's `:query`
 
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ ]
+  {:query [:person/id :person/fname :person/email 
+           {:person/address (comp/get-query Address)}]
+   ..} ..)
+```
+
 *The query declares what props the component needs, _including_ the needs of its child components.* (We saw how `Person` includes the query of `Address` via `comp/get-query`.)
 
 Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
@@ -150,11 +157,19 @@ TIP: Don't be mislead, the query is not a standalone query that could be "run" d
 
 #### Component's `:ident`
 
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ props]
+  {..
+   :ident (fn [] [:person/id (:person/id props)])} ..)
+```
+
 For a _data entity_, ident(ifier) is akin to a self-contained foreign key in SQL: it contains the (unique) name of an entity's ID property and its value, in a 2-element vector. For example: `[:person/id 123]`.
 
 For a _component_, its `:ident` is a function that returns the ident of the associated data entity, typically based on its props (captured from the component's arguments): `(fn [] [:person/id (:person/id props)])`. (We could simplify the whole thing to `:person/id` using the {url-book}#_keyword_idents[keyword ident form] but we can ignore that for now.) 
 
-For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `[:component/id :AllPeopleList]`.
+For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `:ident (fn [] [:component/id :AllPeopleList])`.
 
 *Why* do we need component idents? To tell Fulcro what is the ID property of an entity so that it can _normalize_ its data into the client database.
 
@@ -166,10 +181,20 @@ When do you need to define initial state?
 
 * When you want to make sure that the component has particular props before any data is loaded from the backend
 * When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries]
-* When a child component has initial state (f.ex. dynamic routers do)
+* When a child component has an initial state (f.ex. dynamic routers do)
 * (?) When the component is used as a target of a dynamic router
 
 #### Rendering DOM: the body of a component
+
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ {:person/keys [fname email address]}]
+  {..}
+  (div
+    (p "Name: " fname ", email: " email)
+    (ui-address address)))
+```
 
 The body of the `defsc` macro becomes the `render` method of the React class.
 
@@ -207,7 +232,7 @@ The signature is:
 Returning multiple elements from the body::
 To return multiple child elements, wrap them either in a Clojure sequence or `comp/fragment`. React demands that every one must have a unique `:key`. Ex.: `(defsc X [_ _] [(dom/p {:key "a"} "a") (dom/p {:key "b"} "b")])`.
 
-Assigning a unique `:key` to every instance of a component::
+Assigning a unique `:key` to every instance of a Fulcro component::
 If a Fulcro component is being rendered in a sequence, f.ex. because you do something like `(map ui-employee (:department/employees props))`, it must have a unique `:key` prop. Leverage the second, optional argument to `comp/factory` to specify a function of the component's props that will return the unique key:
 +
 ```clojure
@@ -458,7 +483,7 @@ How to provide params to parametrized Pathom resolvers?::
 Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load :current-user User {:params {:username u :password p}})`.
 
 How can I add a reference to the loaded data entity to another entity present in the client DB?::
-Similarly as with `merge-component!` but instead of specifying directly `:append`, `:prepend`, and `:replace`, you specify the `:target` option with a target from https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/algorithms/data_targeting.cljc[the `targeting` namespace] such as `(append-to <path>)`, `(prepend-to <path>)`, `(replace-at <path>)` or any combination of these by leveraging `(multiple-targets ...)`.
+Similarly as with `merge-component!` but instead of specifying directly `:append`, `:prepend`, and `:replace`, you specify the `:target` option with a target from https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/algorithms/data_targeting.cljc[the `targeting` namespace] such as `(append-to <path>)`, `(prepend-to <path>)`, `(replace-at <path>)` or any combination of these by leveraging `(multiple-targets ...)`. See the example above.
 
 How to exclude a costly prop(s) from being loaded?::
 Imagine you want to load a Blog entity but exclude its comments so that you can load them asynchronously or e.g. when the user scrolls down. You can leverage `:without` for that: `(load! app [:blog/id 42] Blog {:without #{:blog/comments}})`. Notice that it removes the property no matter how deep in the query it is so `(load! app :all-blogs BlogList {:without #{:blog/comments}})` will also do this. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading].
