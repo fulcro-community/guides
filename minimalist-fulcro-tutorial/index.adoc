@@ -144,7 +144,7 @@ Also notice that `:query` and props mirror each other. Fulcro will actually warn
 
 Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
 
-The figure below shows how the query fragments of all components (that have a query) are composed into the Root component's query and sent to the backend (1), which responds with a tree of data (2), which is then propagated down from Root to its children and so on. (We omit the role of the client DB here for simplicity.)
+The figure below shows how the query fragments of all components (that have a query) are composed into the Root component's query and sent to the backend (1), which responds with a tree of data (2), which is then propagated down from Root to its children and so on.
 
 .Components, query, and data: UI -> query -> data -> UI
 image::fulcro-ui-query-data.svg[]
