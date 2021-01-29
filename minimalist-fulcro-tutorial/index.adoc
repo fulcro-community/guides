@@ -1,0 +1,553 @@
+# Minimalist Fulcro Tutorial
+
+:url-book: https://book.fulcrologic.com/
+:url-eql: https://edn-query-language.org/eql/1.0.0
+:url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
+:url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
+
+.Help us improve!
+****
+Please help me to improve this tutorial. If you find anything that can/should be removed, or something unclear, or have any other comment or suggestion, please do not hesitate to ping `@holyjak` in https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro at the Clojurians] Slack (or https://clojurians.zulipchat.com/#narrow/pm-with/214497-user214497[Zulip]).
+****
+
+This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY. For the latter, read the awesome {url-book}[Fulcro Developers Guide], especially the introductory chapters 2-4.
+The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
+
+## Prerequisities
+
+This tutorial expects that you have gone through {url-eql}/what-is-eql.html#_eql_for_selections[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). (But you don't need to care about Pathom readers.)
+
+It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
+
+It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and perhaps also this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into the vlue proposition of GraphQL and EQL).
+
+## A word of warning
+
+Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). It is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well.
+
+## An overview of Fulcro
+
+Fulcro is a full-stack web framework. These are the main components:
+
+.Fulcro system view
+image::fulcro-system-view.svg[Fulcro system view,420,190]
+
+. Frontend
+.. _UI_ - Fulcro/React components render a DOM and submit mutations (= action name + parameters) to the transaction (Tx) subsystem
+.. _Tx_ (transaction subsystem) - asynchronously executes local mutations and sends remote mutations and queries to the remote backend
+.. _Client DB_ - data from the backend is _normalized_ into the client-side DB (data cache); _Tx_ typically schedules a re-render afterwards
+. Backend
+.. _Pathom_ receives EQL queries and mutations and responds with a data tree
+
+### Key concepts and elements
+
+We will briefly describe the key terms we are going to use a lot. Some are later explained in more detail. Skim over them and then come back to this section after having read about Fulcro lifecycle and whenever you are unsure what any of this terms means.
+
+App::
+A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component's `this` is not available. Referred to as `app` in code samples.
+Client DB::
+The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id value (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`). (For convenience, we use the name of the id property as the "name" of the entity - thus `:person/id`, `:user/username`.) It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
+Component::
+A Fulcro component is a React component with extra meta data, such as _query_ and _ident_.
+EQL (EDN Query Language) server::
+The backend includes an EQL server - Pathom - that can process EQL queries and mutations and respond with data (nested, tree-shaped).
+Ident::
+_Of a data entity_: the identifier of a data entity composed of the ID property name and value. Ex.: `[:person/id 123]`. _Of a component_: a function that returns an ident (discussed later).
+Mutation (Fulcro)::
+When components want to "change" something, they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. In the context of Fulcro, a request to load data from the backend is also a mutation (while to Pathom it is sent as a plain EQL query). Remote mutations are sent as {url-eql}/specification.html#_mutations[EQL mutations].
+Normalization of data::
+Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only their _idents_. The normalization depends on components declaring their idents.
+Query::
+Each stateful component declares what data it needs using an EQL query (or rather a query fragment). If it has stateful children, it also includes their query in its own.
+Resolver, Pathom::
+A Pathom resolver takes typically 0 or 1 inputs and optional parameters and outputs a tree of data. F.ex. an input-less resolver can declare: `::pc/output [{:all-blogs [:blog/id :blog/title :blog/content]}]` and return `{:all-blogs [{:blog/id 1, ..}, ..]}`. Thus any query that asks for `:all-blogs` can be "parsed" and answered.
+Root component::
+The top component of the UI, customary called `Root`.
+Transaction subsystem::
+Components submit mutations to the transaction subsystem for execution with `transact!`. You can think of it as an asnychronous queue.
+
+### Fulcro lifecycle
+
+Let's have a look at what is happening in a Fulcro application:
+
+.Fulcro lifecycle
+image::fulcro-lifecycle.svg[Fulcro lifecycle,420,400]
+
+The core of the Fulcro lifecycle is simple:
+
+. Something happens that requires a refresh of the UI, e.g. mounting the Root component, loading data from the backend, or receiving a data response from a mutation submitted to the backend
+.. When data arrives from the backend:
+... Get the query from the relevant component (f.ex. `MyBlogList`)
+... Use the query to _normalize_ the data into the client DB
+. Fulcro asks the Root component for its query (which _includes the queries of its children_ and thus describes all the data the whole page needs)
+. Fulcro uses the query and the client DB to construct the props data tree for the Root component
+. The props are passed to the Root component and it is rendered
+
+## Zooming in on components and mutations
+
+You will learn:
+
+* That a Fulcro component defines a React component class
+* How a component query declares its data needs
+* How a component ident is used to normalize its data to avoid duplication (and simplify data updates)
+* How `transact!` is used to submit mutations from the UI
+* How `load!` submits a mutation that loads data from the backend, normalizes them, and stores them into the client database
+* How data is stored in the normalized (de-duplicated) client database
+
+### The anatomy of a Fulcro component: query, ident, body
+
+Fulcro components, which are also React components, are the heart of a Fulcro application. Let's explore them:
+
+.A Fulcro component
+====
+```clojure
+;; Assume `defsc Address` and its factory `ui-address` exist:
+(defsc Person 
+  [this {:person/keys [fname email address] :as props}]
+  {:query [:person/id :person/fname :person/email 
+           {:person/address (comp/get-query Address)}]
+   :ident (fn [] [:person/id (:person/id props)])}
+  (div
+    (p "Name: " fname ", email: " email)
+    (ui-address address)))
+
+(def ui-person (comp/factory Person))
+```
+====
+
+_(Assume the {url-book}#_common_prefixes_and_namespaces[same `:require` aliases as described in the Fulcro Development Guide].)_
+
+`(defsc Person ..)` ("define stateful component") defines a new React class-based component. After the declaration of arguments (`this` and `props`) comes a map with meta data of the component (here `:query` and `:ident`, the two most common). Finally comes the body (which will become the `render` method of the React component) that actually produces React DOM elements. You could read it like this:
+
+```clojure
+(defsc <Name> [<arguments>]
+  {<meta data>}
+  <body to be rendered>)
+```
+
+Notice that `defsc` produces a JS _class_, which we turn into a React factory with `comp/factory` (customary we kebab-case its name and prefix it with `ui-`). The factory can then be used to create React elements (as is demonstrated with the `ui-address` factory). (JSX does this for you so that you can use classes directly. Here we want more control.)
+
+Also notice that `:query` and props mirror each other. Fulcro will actually warn you if there is a mismatch between the two, thus preventing many errors.
+
+#### Component's `:query`
+
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ ]
+  {:query [:person/id :person/fname :person/email 
+           {:person/address (comp/get-query Address)}]
+   ..} ..)
+```
+
+*The query declares what props the component needs, _including_ the needs of its child components.* (We saw how `Person` includes the query of `Address` via `comp/get-query`.)
+
+Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
+
+The figure below shows how the query fragments of all components (that have a query) are composed into the Root component's query and sent to the backend (1), which responds with a tree of data (2), which is then propagated down from Root to its children and so on. (We omit the role of the client DB here for simplicity.)
+
+.Components, query, and data: UI -> query -> data -> UI
+image::fulcro-ui-query-data.svg[]
+
+Beware: You must not copy and paste the child's query directly but rather use `(comp/get-query <Child>)` as demonstrated. Both for DRY and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
+
+Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. How does the data get into the client database, you ask? See the discussion of `load!` later on.
+
+TIP: Don't be mislead, the query is not a standalone query that could be "run" directly against the database (as you know from SQL or re-frame subscriptions). It is rather a _query fragment_, which only makes sense in the context of its parent's query. Only the root componet's properties are resolved directly against the client database or, when `load!`-ed, against global Pathom resolvers. A query such as `[:person/id :person/fname]` is meaningless on its own - which person? Only in the context of a parent, such as `[{:all-people [<insert here>]}]` (in an imaginary `AllPeopleList` component) does it make sense.
+
+#### Component's `:ident`
+
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ props]
+  {..
+   :ident (fn [] [:person/id (:person/id props)])} ..)
+```
+
+For a _data entity_, ident(ifier) is akin to a self-contained foreign key in SQL: it contains the (unique) name of an entity's ID property and its value, in a 2-element vector. For example: `[:person/id 123]`.
+
+For a _component_, its `:ident` is a function that returns the ident of the associated data entity, typically based on its props (captured from the component's arguments): `(fn [] [:person/id (:person/id props)])`. (We could simplify the whole thing to `:person/id` using the {url-book}#_keyword_idents[keyword ident form] but we can ignore that for now.) 
+
+For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `:ident (fn [] [:component/id :AllPeopleList])`.
+
+*Why* do we need component idents? To tell Fulcro what is the ID property of an entity so that it can _normalize_ its data into the client database.
+
+#### Component's `:initial-state`
+
+A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare the props it wants to get passed on the first "frame", i.e. the first render. The data will be normalized based on idents and stored into the client DB. You can use it to define the state of the application before any data is loaded from the server-side.
+
+When do you need to define initial state?
+
+* When you want to make sure that the component has particular props before any data is loaded from the backend
+* When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries]
+* When a child component has an initial state (f.ex. dynamic routers do)
+* (?) When the component is used as a target of a dynamic router
+
+#### Rendering DOM: the body of a component
+
+.From the component example presented earlier:
+```clojure
+(defsc Person 
+  [_ {:person/keys [fname email address]}]
+  {..}
+  (div
+    (p "Name: " fname ", email: " email)
+    (ui-address address)))
+```
+
+The body of the `defsc` macro becomes the `render` method of the React class.
+
+Instead of JSX, we use functions from the https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/dom.cljs[`dom` namespace] for rendering HTML tags and React factories for rendering React components.
+
+This is what a complete call looks like:
+
+```clojure
+(dom/h2 :.ui.message#about
+  {:style {:background "1px solid black"}
+   :classes ["my-heading" (when (:important? props) "important")]}
+  "About")
+```
+
+and here is a minimal example:
+
+```clojure
+(dom/p "Hello " (:fname props) "!")
+```
+
+The signature is:
+
+```clojure
+(dom/<tag>
+  <[optional] keyword encoding classes and an element ID> ; <1>
+  <[optional] map of the tag's attributes (or React props)>; <2>
+  <[optional] children>) ; <3>
+```
+<1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to `{:classes [<class name> ...], :id <id>}`.
+<2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class names, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
+<3> Zero or more children
+
+##### Additional notes
+
+Returning multiple elements from the body::
+To return multiple child elements, wrap them either in a Clojure sequence or `comp/fragment`. React demands that every one must have a unique `:key`. Ex.: `(defsc X [_ _] [(dom/p {:key "a"} "a") (dom/p {:key "b"} "b")])`.
+
+Assigning a unique `:key` to every instance of a Fulcro component::
+If a Fulcro component is being rendered in a sequence, f.ex. because you do something like `(map ui-employee (:department/employees props))`, it must have a unique `:key` prop. Leverage the second, optional argument to `comp/factory` to specify a function of the component's props that will return the unique key:
++
+```clojure
+(def ui-employee (comp/factory Employee {:keyfn :employee/id}))
+;; assuming the Employee component has the (unique) :employee/id prop
+```
+
+Passing additional ("computed") props from the parent::
+What if the parent needs to pass on some additional props other than those that come from the query resolution, for example callbacks? You should not just stick them into the props map because it would be then missing if Fulcro does a targeted re-render of just the child component. Instead, you should pass it on as _computed props_ either manually or leveraging `comp/computed-factory` and the optional third argument of `defsc`. This is demonstrated below:
++
+.Passing computed props
+====
+```clojure
+(defsc Person [this props {::keys [callback]}]
+ {..}
+ (dom/div
+   (dom/p "Person " (:person/name props))
+   (dom/button {:onClick callback} "Delete")))
+
+(def ui-person (comp/computed-factory Person))
+
+(defsc Parent [_ {:parent/keys [spouse]}]
+  {..}
+  (ui-person spouse {::callback #(js/alert "I won't give her up!")}))
+```
+====
+Read more in {url-book}#_passing_callbacks_and_other_parent_computed_data[Passing Callbacks and Other Parent-computed Data].
+
+##### Note on raw React components
+
+We saw how to render a child Fulcro component, the `Address` (via its factory function, `ui-address`). But what about raw React classes from JS libraries?
+
+It is similar, only instead of `comp/factory` {url-book}#_factory_functions_for_js_react_components[we use `interop/react-factory`], which will take care of converting Cljs data to JS etc.
+
+### Changing global data and performing remote calls: mutations
+
+When a component needs to change something outside of itself, it does so through submitting _mutations_ to the transaction subsystem via `comp/transact!`.
+
+Mutations can be local (client-side) only or local and remote (though there does not need to be any local behavior defined). Even though mutation usage looks like a function call, it is not. What `transact!` expects is a sequence of _data_:
+
+```clojure
+(comp/transact! app-or-component 
+  [(<fully qualified symbol> <params map>), ...])
+```
+
+That is so that the mutation can be submitted over the wire to the backend as-is. Of course both Fulcro and Pathom expect that there actually is a `defmutation` corresponding to the provided "fully qualified symbol". So how do we define a mutation on the client and server side? (Assuming standard Fulcro and {url-pathom}/introduction.html#_aliases_used_in_code_examples[Pathom namespace aliases].)
+
+.A Fulcro mutation
+====
+```clojure
+#?(:cljs 
+    ;; client-side
+    (m/defmutation delete-employee [{id :employee/id :as params}] ; <1>
+      (action [{:keys [app state] :as env}]          ; <2>
+        (swap! state update :employee/id dissoc id))
+      (remote [env] true)                            ; <3>
+      (ok-action [{:keys [app state result]}]        ; <4>
+        (println "It worked!")))
+  :clj 
+    ;; server-side
+    (pc/defmutation delete-employee [env {id :employee/id :as params}]) ; <5>
+      {::pc/params #{:employee/id}}
+      (db/delete-employee id)
+      nil))
+
+;; Somewhere in a component:
+(comp/transact! this [(delete-employee {:employee/id id})])   ; <6>
+;; or:
+(comp/transact! this `[(delete-employee {:employee/id ~id})]) ; <7>
+```
+====
+<1> The client-side mutation takes a map of parameters (see (6) for usage) and has zero or more named parts that look like protocol method implementations
+<2> `action` is what should happen first. Here we can directly change the client DB (`state`, an atom)
+<3> if `remote` is present and returns something truthy, then the mutation is also sent to the backend as an https://edn-query-language.org/eql/1.0.0/specification.html#_mutations[EQL mutation]. It could also modify the EQL before sending it or declare what data the server-side mutation returns. Omit for a client-side-only mutation.
+(Note: here the name `remote` must match against a remote registered with the Fulcro app; by default it is called "remote" but you could also register additional remotes and thus add here sections for those.)
+<4> `ok-action` is called after the remote mutation succeeds. Notice that in Fulcro mutations and queries generally https://book.fulcrologic.com/#FullStackErrorHandling[never "fail" and rather return data] indicating that something went wrong. You can submit other mutations etc. from here.
+<5> The server-side mutation is a Pathom mutation (taking Pathom environment and the same params as the client-side). Typically it would update some kind of a data store.
+<6> As demonstrated, we submit a mutation for processing using `comp/transact!` and passing in the params. We can call the mutation as a function, which will simply return the call as data (example: `(my-mutation {x: 1})` -> `'(my.ns/my-mutation {x: 1})`)
+<7> ...or we provide the symbol directly
+
+#### transact!-ing multiple mutations
+
+If you `transact!` multiple mutations then their `action` will be processed _in order_. However, if they have a remote part, Fulcro does only send it but does not wait for it to finish before going on to process the next mutation. If you want to only issue a follow-up mutation after the remote part of the initial mutation has finished, do so from its `ok-action`.
+
+### ``load!``-ing data
+
+### Preparation: Merging data into the client DB with `merge-component!`
+
+Before looking into loading remote data, we must understand how a (denormalized) tree of data can be merged and normalized into the client DB. There is no point in loading data unless we can put them into the client DB, the only place where Fulcro ever looks.
+
+Given these two components:
+
+```clojure
+(defsc Address [_ _]
+  {:query [:address/id :address/street]
+   :ident :address/id})
+   ;; reminder: `:address/id` is a shorthand for
+   ;; (fn [:address/id (:address/id props)])
+
+(defsc Person [_ _]
+  {:query [:person/id :person/fname {:person/address (get-query Address)}]
+   :ident :person/id})
+```
+
+and this data:
+
+```clojure
+(def person-tree
+  {:person/id 1
+   :person/fname "Jo"
+   :person/address {:address/id 11
+                    :address/street "Elm Street 7"}})
+```
+
+we can merge the data into the client DB like this:
+
+```clojure
+(merge/merge-component!
+  app
+  Person
+  person-tree)
+```
+
+to get the following client DB:
+
+```clojure
+{:person/id  {1  {:person/id 1   :person/fname "Jo" :person/address [:address/id 11]}}
+ :address/id {11 {:address/id 11 :address/street "Elm Street 7"}}}
+```
+
+Notice that idents of both `Person` and `Address` were used to put the data in the correct "tables". If `Address` lacked an ident, its data would stay denormalized inside the person just as it is in the input data. (The top component passed to `merge-component!` always must have an ident.)
+
+After having modified the client DB, `merge-component!` will also schedule re-rendering of the UI.
+
+The signature of `merge-component!` is:
+
+```clojure
+(merge/merge-component!
+  app-or-component
+  <Component>
+  <data tree>
+  <[optional] key-value pairs of options>)
+```
+`merge-component!` gets the ident and query of the given component (and leverages the metadata on the child query fragments to get the other relevant idents, such as Address') and uses those to normalize the data into the DB. Notice that the data is really *merged* into the DB in a smart way and not just blindly overwriting it, i.e. pre-existing data is preserved (see the docstring for details).
+
+#### Targeting - Adding references to the new data to existing entities
+
+Now, what if we don't only want to add the data itself but also want to add reference(s) to the newly added data to some other, existing data entities in the client DB? `:append`, `:prepend`, and `:replace` to the rescue! We can specify as many of these as we want, providing full paths to the target property in the client DB. The paths have three (four, in the case of `:replace` of a to-many element) parts - entity name, entity ID value, the target property.
+
+.Data targetting: append, prepend, replace
+====
+```clojure
+;; Given an app with this client DB:
+(def app 
+  (app/fulcro-app
+    {:initial-db
+     {:list/id   {:friends    {:list/people [[:person/id :me]]}
+                  :partygoers {:list/people [[:person/id :me]]}}
+      :person/id {:me         {:person/id :me :person/fname "Me"
+                              :person/bff [[:person/id :me]]}}}}))
+
+;; and this call (reusing the person-tree defined earlier):
+(merge/merge-component!
+  app
+  Person
+  person-tree
+  :append  [:list/id :friends :list/people]
+  :prepend [:list/id :partygoers :list/people]
+  :replace [:person/id :me :person/bff 0]
+  :replace [:best-person])
+
+;; we get this Client DB:
+{:list/id
+ {:friends    {:list/people [[:person/id :me] [:person/id 1]]},  ; <1>
+  :partygoers {:list/people [[:person/id 1] [:person/id :me]]}}, ; <2>
+ :person/id
+ {:me #:person{:id :me, :fname "Me", :bff [[:person/id 1]]},     ; <3>
+  1   #:person{:id 1,   :fname "Jo", :address [:address/id 11]}},
+ :address/id {11 #:address{:id 11, :street "Elm Street 7"}},
+ :best-person [:person/id 1]}                                     ; <4>
+```
+====
+<1> `:append` inserts the ident of the data at the _last_ place of the target to-many property (vector of idents) (unless the vector already includes it anywhere)
+<2> `:prepend` inserts the ident of the data at the _first_ place of the target to-many property (vector of idents) (unless the vector already includes it anywhere)
+<3> `:replace` can replace an element of a to-many vector given a path ending with an index and provided it already exists
+<4> and `:replace` can also insert the ident at the given path (which even does not need to be an entity-id-property triplet)
+
+We have seen that in addition to merging data into the client DB we can also _append_ and _prepend_ references to it to to-many reference properties on other entities (such as `:list/people`), insert them into to-one properties with `:replace` etc. And we can do as many such operations as we want at once.
+
+#### Loading remote data
+
+Now that you understand the merging of data into the client DB, you can load data with `df/load!`, which is just `merge-component!` that - given a property or an ident that Pathom can resolve - obtains data from the remote. (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
+
+The signature of `load!` is:
+
+```clojure
+(df/load! app-or-comp          ; <1>
+          src-keyword-or-ident ; <2>
+          component-class      ; <3>
+          options)             ; <4>
+```
+<1> Pass in a reference to the Fulcro `app` or a component's `this` (the  first argument of `defsc`)
+<2> Specify the server-side property (attribute) that Pathom can resolve - either a keyword, i.e. a property name output by a global Pathom resolver, or an ident such as `[:person/id 1]`, supported by a Pathom resolver taking the corresponding input (e.g. `::pc/input #{:person/id}`)
+<3> The component whose query defines which of the available properties to get and that is used when merging the returned data with `merge-component!`.
+<4> `load!` takes plenty of options, a number of them very useful. We will explore those in more detail later.
+
+(Notice that `load!` will actually `transact!` a predefined mutation. It just provides a convenient wrapper around the mutation and common additional actions.)
+
+A couple of examples:
+
+.load! variants
+====
+```clojure
+;; Assuming a global Pathom resolver `:all-people`
+;; (with `::pc/output [:all-people [..]]` and no ::pc/input)
+(df/load! app :all-people Person) ; <1>
+;; => client db gets:
+;; :all-people [[:person/id 1], [:person/id 2], ...]
+;; :person/id {1 {:person/id 1, :person/propX ".."}, 2 {...}}
+
+;; Loading by ident - assuming a Pathom resolver
+;; with `::pc/input #{:person/id}`:
+(df/load! this [:person/id 123] Person) ; <2>
+;; => client db gets:
+;; :person/id {..., 123 {:person/id 123, :person/propX ".."}}
+
+;; As above, but also adding the loaded entity to
+;; a list in a related entity
+(df/load! app [:employee/id 123] Employee ; <3>
+  {:target (targeting/append-to [:department/id :sales :department/employees])})
+;; => client db gets:
+;; :employee/id {..., 123 {:employee/id 123, ...}}
+;; :department/id {:sales {:department/id :sales, 
+;;                         :department/employees [..., [:employee/id 123]]}}
+
+```
+====
+<1> Load an entity or list of entities from a _global (input-less) resolver_
+<2> Load an entity by ident
+<3> Load an entity by ident and add a reference to another entity, leveraging the `:target` option and the helpers in the `targeting` namespace
+
+#### How to...
+
+Here we will learn how to solve a number of common needs by leveraging the rich set of options that `load!` supports. See its docstring for the full list and documentation.
+
+[qanda]
+How to provide params to parametrized Pathom resolvers?::
+Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load :current-user User {:params {:username u :password p}})`.
+
+How can I add a reference to the loaded data entity to another entity present in the client DB?::
+Similarly as with `merge-component!` but instead of specifying directly `:append`, `:prepend`, and `:replace`, you specify the `:target` option with a target from https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/algorithms/data_targeting.cljc[the `targeting` namespace] such as `(append-to <path>)`, `(prepend-to <path>)`, `(replace-at <path>)` or any combination of these by leveraging `(multiple-targets ...)`. See the example above.
+
+How to exclude a costly prop(s) from being loaded?::
+Imagine you want to load a Blog entity but exclude its comments so that you can load them asynchronously or e.g. when the user scrolls down. You can leverage `:without` for that: `(load! app [:blog/id 42] Blog {:without #{:blog/comments}})`. Notice that it removes the property no matter how deep in the query it is so `(load! app :all-blogs BlogList {:without #{:blog/comments}})` will also do this. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading].
+
+How to load only a subtree of data (f.ex. the one excluded earlier with `:without`)?::
+The opposite of the `:without` option is the function `df/load-field!`, which loads 1+ props of a component. Inside the Blog component: `(df/load-field! this [:blog/comments] {})`. Learn more in the chapter on {url-book}#IncrementalLoading[Incremental Loading]. Alternatively, you can use the load! option `:focus`, which requires more work but is more flexible.
+
+How to track the loading status, i.e. loading x loaded x failed?::
+Use the option `:marker <your custom keyword or data>` to add a "marker" that will track the status for you. See the example below.
+
+How to execute a follow-up action after the load is finished?::
+What if you need to do an additional activity after the data arrives? You can use the options `:post-mutation`, optionally with `:post-mutation-params`, to submit a mutation. Or you can use the more flexible option `:post-action (fn [env] ..)`, which can call `transact!`.
+
+#### When to `load!`?
+
+When to call `load!`? The main options are:
+
+. When your {url-book}#_loading_something_into_the_db_root[application is starting]
+. In an event handler (e.g. onClick)
+. When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
+. When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
+
+#### Bonus: Tracking loading state with load markers
+
+You can ask `load!` to track the status of loading using a "load marker" and you can query for the marker to use it in your component. See the chapter {url-book}#_tracking_specific_loads[Tracking Specific Loads] in the book for details. A simple example:
+
+.Tracking the status of a load! with a load marker
+====
+```clojure
+;; Somewhere during the app lifecycle:
+(df/load! [:list/id :friends] Person {:marker :friends-list}) ; <1>
+
+;; The component:
+(defsc FriendsList [_ props]
+  {:query [:list/people [df/marker-table :friends-list]]    ; <2>
+   :ident (fn [] [:list/id :friends])}
+  (let [marker (get props [df/marker-table :friends-list])] ; <3>
+    (cond
+      (df/loading? marker) (dom/div "Loading...")           ; <4>
+      (df/failed?  marker) (dom/div "Failed to load :-(")
+      :else (dom/div
+              (dom/h3 "Friends")
+              (map ui-person (:list/people props))))))
+```
+====
+<1> Ask `load!` to track the load with a marker called e.g. `:friends-list`
+<2> Add `[df/marker-table <your custom id>]` to your query to access the marker (notice that this is an _ident_ and will load the marker with the given ID from the Fulcro-managed marker table in the client DB)
+<3> Get the marker from the props. Notice this is `get` and not `get-in` because the whole ident is used as the key.
+<4> Use the provided functions to check the status of the load and display corresponding UI
+
+#### Briefly about pre-merge
+
+What if your component needs not only the data provided by the server but also some UI-only data to function properly? When you `load!` a new entity - for example `[:person/id 1]` - only the data returned from the backend will be stored into the client DB. If you need to enhance those data with some UI-only data before it is merged there - for example router or form state - you can do so {url-book}#_pre_merge[in its `:pre-merge`]. This is an advanced topic so we will not explore it here but you need to know that this is possible so that you know where to look when the time comes.
+
+## FAQ
+
+[qanda]
+Can different components have the same ident?::
+Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB.
+
+## Next steps
+
+OK, you have completed the tutorial. What now?
+
+. {url-book}#_install_fulcro_inspect[Install Fulcro Inspect] and {url-book}#_configure_chrome_development_settings[enable custom formatters in Chrome] to display Clojure data nicely in the Console - trust me, these two are indispensable!
+. Clone https://github.com/fulcrologic/fulcro-template/[fulcro-template], study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out.
+. Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding

@@ -1,6 +1,8 @@
 # Fulcro Community Guides
+
 Community created guides for learning and using Fulcro and RAD
 
 ## Learning
 
 * link:learning-fulcro.adoc[Guide to learning Fulcro]
+* link:minimalist-fulcro-tutorial/index.adoc[Minimalist Fulcro Tutorial]
