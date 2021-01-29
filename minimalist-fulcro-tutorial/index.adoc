@@ -19,7 +19,7 @@ This tutorial expects that you have gone through {url-eql}/what-is-eql.html#_eql
 
 It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
-It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and perhaps also this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into the vlue proposition of GraphQL and EQL).
+It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and perhaps also this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into the value proposition of GraphQL and EQL).
 
 ## A word of warning
 
@@ -424,7 +424,7 @@ We have seen that in addition to merging data into the client DB we can also _ap
 
 #### Loading remote data
 
-Now that you understand the merging of data into the client DB, you can load data with `df/load!`, which is just `merge-component!` that - given a property or an ident that Pathom can resolve - obtains data from the remote. (Needless to say, there need to be {url-pathom-resolvers}[Pathom resolvers] being able to provide the data you are asking for.)
+Now that you understand the merging of data into the client DB, you can load data with `df/load!`, which is just `merge-component!` that - given a property or an ident that Pathom can resolve - obtains data from the remote. (Needless to say, there needs to be {url-pathom-resolvers}[Pathom resolvers] available to provide the data you are asking for.)
 
 The signature of `load!` is:
 
