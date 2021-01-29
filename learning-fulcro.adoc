@@ -1,7 +1,5 @@
 # Guide to learning Fulcro
 
-NOTE: Under development. You can https://docs.google.com/document/d/1XMWwwnxtukZ0o3ev4GH2Kpa8MvX4z-r4kYKJMaMBw2A/edit?usp=sharing[edit or comment on the shared document] that will be fed back up to this page.
-
 There is plenty of materials - the excellent, comprehensive https://book.fulcrologic.com/[Fulcro Developers Guide], many hours of the invaluable https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos], https://github.com/wilkerlucio/pathom[Pathom] documentation, and various https://github.com/fulcro-community/awesome-fulcro#learning[learning resources from awesome-fulcro]. Then there is RAD and its documentation. It is overwhelming. Everybody will wonder:
 
 > *Where to start? How to go about learning Fulcro?*
@@ -18,16 +16,18 @@ IMPORTANT: Fulcro is likely very different from anything you have used before. Y
 
 ### Recommended approach
 
-WARNING: Very much a work in progress
-
 1. Have a brief look at https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] so that you get an overview of what is available and can back to particular resources when you will need them
-2. Read the beginning of https://book.fulcrologic.com/[Fulcro Developers Guide], at least up to and including "4. Getting Started"
+2. Go through the link:minimalist-fulcro-tutorial/index.adoc[Minimalist Fulcro Tutorial] and its prerequisities
+3. Watch the https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos] - especially Parts 1 to 7 cover many of the pitfalls of getting started (Alex Eeberts' https://github.com/aeberts/fulcro-notes-public[Fulcro Video Notes (i.e. table of content)] (i.e. table of content) might be helpful)
+4. Read the beginning of https://book.fulcrologic.com/[Fulcro Developers Guide], at least up to and including "4. Getting Started"
    * Notice that the Book is essentially reference material and covers many areas and depth that you don’t need to get a general understanding of Fulcro
-3. If you are a visual person, have a look at the https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos] - especially Parts 1 to 7 cover many of the pitfalls of getting started (Alex Eeberts' https://github.com/aeberts/fulcro-notes-public[Fulcro Video Notes (i.e. table of content)] might be helpful)
-4. Clone and play with https://github.com/fulcrologic/fulcro-template/[fulcro-template]
-5. Revisit https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] and the tutorials and troubleshooting materials it links to to check whether some of it isn't what you need just now
-6. `recur`
+5. Clone and play with https://github.com/fulcrologic/fulcro-template/[fulcro-template]
+  * Write the most trivial things to start. If you are not feeling like you really understand query/ident/initial-state/transact/render, then don’t make more complex things until you do. There are not a lot of core concepts, and while those concepts are new they are also simple, but *everything* will be confusing and seem complex and hard if you don’t actually understand those 5 things.
+6. Revisit https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] and the tutorials and troubleshooting materials it links to to check whether some of it isn't what you need just now
+7. `recur`
 
-> *FAQ: What about Fulcro Rapid Application Development (RAD)?*
->
-> While RAD is just an add-on to Fulcro and its demo project is perhaps more up to date, it brings its own additional concepts (attributes) and constructs (reports and forms) so it might be best to wait with it until you grasp Fulcro itself. On the other hand, folks have done that before...
+#### FAQ: What about Fulcro Rapid Application Development (RAD)?
+
+While RAD is just an add-on to Fulcro and its demo project is perhaps more up to date, it brings its own additional concepts (attributes) and constructs (reports and forms) so it might be best to wait with it until you grasp Fulcro itself. On the other hand, folks have done that before...
+
+As Tony explained: You should not use RAD until you understand enough Fulcro to read the source of RAD and go “Oh, I see, that’s just using this and this from Fulcro to save me some typing”.
