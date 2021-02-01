@@ -538,6 +538,13 @@ You can ask `load!` to track the status of loading using a "load marker" and you
 
 What if your component needs not only the data provided by the server but also some UI-only data to function properly? When you `load!` a new entity - for example `[:person/id 1]` - only the data returned from the backend will be stored into the client DB. If you need to enhance those data with some UI-only data before it is merged there - for example router or form state - you can do so {url-book}#_pre_merge[in its `:pre-merge`]. This is an advanced topic so we will not explore it here but you need to know that this is possible so that you know where to look when the time comes.
 
+## Review
+
+You have now learned about the key building block of a Fulcro application, the component, with its query and ident. About effecting changes through local and remote mutations, about loading data, and about normalizing data into the client DB. This following figure demonstrates where each of the pieces fit in the application (the namespace names are just simple examples; in practice they would be more domain-oriented; also, there should perhaps be an ↔ arrow between mutations and the server):
+
+.Where do key Fulcro constructs fit into the system? (Courtesy of Timofey Sitnikov)
+image::fulcro-interfaces.svg[]
+
 ## FAQ
 
 [qanda]
