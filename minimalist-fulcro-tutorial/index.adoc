@@ -10,7 +10,7 @@
 Please help me to improve this tutorial. If you find anything that can/should be removed, or something unclear, or have any other comment or suggestion, please do not hesitate to ping `@holyjak` in https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro at the Clojurians] Slack (or https://clojurians.zulipchat.com/#narrow/pm-with/214497-user214497[Zulip]).
 ****
 
-This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY. For the latter, read the awesome {url-book}[Fulcro Developers Guide], especially the introductory chapters 2-4.
+This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY (aside of a short section).
 The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
 
 ## Prerequisities
@@ -24,6 +24,22 @@ It is helpful to know a little about the principles of *GraphQL* (see this https
 ## A word of warning
 
 Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). It is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well.
+
+## Why Fulcro?
+
+Fulcro was born out of the search for *sustainable software development* of full-stack, non-trivial (web) applications. In other words, it aims to keep complexity under control so that it does not explode as your codebase grows and time goes. It also distinguishes itself by the focus on developer-friendliness: related things are located together and it is easy to navigate (Command/Control-click) to all important code artifacts (instead of being forced to search for string IDs or keywords).
+
+This leads to the following decisions:
+
+* UI = f(state) - React came with the idea that the UI is just a pure function of data but Fulcro really means it. When you have a problem, look at the data, not the UI. 99% of the time it is there.
+* Components declare their data needs ("query") - because nobody else knows or should care about what data the component needs. And these queries are composable so that we can fetch the data needed by the whole UI (sub)tree at once.
+* Graph API: The UI is a a tree (i.e. a graph) of components and therefore the composed query is also a tree. The server can understand and fulfill such a graph query with a tree of data - exactly the data the UI needs. Not the mess of N separate REST endpoints that you need to query individually and combine and prune the data on the frontend.
+* Web applications are inherently full-stack and thus a framework should provide an integrated solution for fetching data from the server - including the ability to track its status - and for triggering actions ("mutations") with potentially both local and remote constituents. We should not pretend that this is not our problem, as many frameworks do.
+* Normalized client-side DB: Even though the UI needs a tree of data and the server returns just that, we want the data cached in a https://en.wikipedia.org/wiki/Database_normalization[normalized] cache - which we call client DB - on the frontend. For decades, this has been the established best practice for data access in databases, and for good reasons. In particular, it prevents a whole class of issues with out-of-sync data. When we mutate a particular piece of data, we want the new value reflected everywhere where it is used, without having to manually go through all those places. And such a normalized database also makes it trivial to find just the piece of data you want to change (all you need is the entity's name - its ID value - the property name).
+
+Fulcro is also quite well designed. It is based on a small set of orthogonal building blocks and it doesn't hide anything from you - you can always go a level deeper into its internals to achieve what you need (as long as you are aligned with its overall philosophy). Its flexibility and customizability is surprising - all of the critical features from network interaction to rendering optimization are easily customizable. It is also very careful about providing only the tools that are generally applicable and avoiding "features" that might help some people but stand in the way of others. But thanks to the aforementioned flexibility, you can implement what you need for your unique use case yourself.
+
+To learn more about the reasoning behind Fulcro, listen to the ClojureScript Podcast https://podcasts.apple.com/us/podcast/s4-e6-fulcro-with-tony-kay-part-1/id1461500416?i=1000479361034[S4 E6 Fulcro with Tony Kay (Part 1)] (2020), which explores the origins of and key motivation for Fulcro, and read the {url-book}#_getting_started[Ch. 4. Getting Started] of the Fulcro Developers Guide, which demonstrates how various problems are made easier thanks to the way Fulcro is. To learn to use Fulcro, read on :-).
 
 ## An overview of Fulcro
 
@@ -46,7 +62,19 @@ We will briefly describe the key terms we are going to use a lot. Some are later
 App::
 A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component's `this` is not available. Referred to as `app` in code samples.
 Client DB::
-The client-side cache of data. It is a map of maps: entity name (e.g. `:person/id`) -> entity id value (e.g. `123`) -> properties of the entity (e.g. `{:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}`). (For convenience, we use the name of the id property as the "name" of the entity - thus `:person/id`, `:user/username`.) It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
+The client-side cache of data. It is a map of maps: 
++
+Entity name -> entity id value -> properties of the entity
++
+For convenience, we use the name of the _id property_ as the "name" of the entity - thus `:person/id`, `:user/username`. Example:
++
+```clojure
+{:person/id {123 {:person/id 123, :person/fname "Jo", :person/address [:address/id 3]}
+             ...}
+ ...}
+```
++
+It is fed by _initial data_ and _loading_ data from the backend and can be changed by _mutations_.
 Component::
 A Fulcro component is a React component with extra meta data, such as _query_ and _ident_.
 EQL (EDN Query Language) server::
