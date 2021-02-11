@@ -15,7 +15,7 @@ The goal is to enable you to read, understand, and tinker with the code of a Ful
 
 ## Prerequisities
 
-This tutorial expects that you have gone through {url-eql}/what-is-eql.html#_eql_for_selections[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). (But you don't need to care about Pathom readers.)
+This tutorial expects that you have gone through link:../tutorials/eql-pathom-overview.org[*an EQL Tutorial*] and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[an idea about *Pathom v2*] and {url-pathom-resolvers}[Pathom resolvers] (global, ident, parameters). (But you don't need to care about Pathom readers.)
 
 It also assumes that you are already https://reactjs.org/tutorial/tutorial.html[familiar with *React*] and thus with concepts such as components, https://reactjs.org/warnings/legacy-factories.html[factories], elements, a tree of components, passing "props" from the root component, UI as a function of data.
 
