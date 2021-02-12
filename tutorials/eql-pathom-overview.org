@@ -114,7 +114,7 @@ But what if you want to specify which items you want from the "nested" data? As 
 
 #+begin_src clojure
 
-[{:all-lists {:list/items [:todo/label]}}]
+[{:all-lists [{:list/items [:todo/label]}]}]
 
 #+end_src
 
