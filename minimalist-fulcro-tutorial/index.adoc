@@ -534,6 +534,81 @@ When to call `load!`? Fulcro does not load any data from the server for you, you
 . When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
 . When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
 
+#### What to `load!`?
+
+Even though the Root's query represents the data needs of the whole UI, you essentially never use it to `load!` the data from the backend. It does not make sense, as we will see briefly. What you do instead is that you load distinct sub-trees of the data that actually correspond to top-level "entry points" (global Pathom resolvers) in your data model. Remember that you invoke load! with:
+
+```clojure
+(df/load! app :some-server-property SomeComponent)
+```
+
+and it will construct and send the following EQL over the wire:
+
+.EQL query sent to the backend
+```clojure
+[{:some-server-property <the query of SomeComponent>}]
+```
+
+and finally store the returned data in the client DB like this:
+
+.Client DB
+```clojure
+{...
+ :some-server-property <the (normalized) data>}
+```
+
+Loading Root's query in this way does not make sense because it would put the data under a key in the client DB (such as `:some-server-property` above) while the Root needs its props to be directly at the root of the client DB. You could bypass `load!` and send the Root's query directly, as-is to bypass this problem. But normally you simply issue 1+ loads for the data of interest, with proper targeting, upon some event (such as app start).
+
+Let's have a look at a simple banking application that shows two lists, an overview of all accounts and an overview of all customers:
+
+.A banking application
+====
+```clojure
+(defsc Account [_ props]
+ {:ident :account/id
+  :query [:account/id :account/owner :account/balance]}
+ (p (str props)))
+(def ui-account (comp/factory Account))
+
+(defsc AccountList [_ props]
+ ;; Note: In practice, this would be UI-only comp. with no query
+ {:ident (fn [] [:component/id ::AccountList])
+  :query [{:account-list/accounts (comp/get-query Account)}]}
+ (div
+   (h2 "Accounts")
+   (map ui-account accounts)))
+(def ui-account-list (comp/factory AccountList))
+
+;; LEFT OUT Customer, CustomerList, their ui-* ;;
+
+(defsc Root [_ {:root/keys [accounts customers]}]
+ {:query [{:root/accounts (comp/get-query AccountList)}
+          {:root/customers (comp/get-query CustomerList)}]}
+ (div
+   (h1 "Your bank")
+   (ui-account-list accounts)
+   (ui-customer-list customers)))
+
+(comment
+  ;; Somewhere during app startup, we would do:
+  (do
+    (df/load! app :all-accounts Account ; <1>
+      {:target (targeting/replace-at [:component/id :AccountList :account-list/accounts])}) ; <2>
+    (df/load! app :all-customers Customer
+      {:target (targeting/replace-at [:component/id :CustomerList :customer-list/customers])}))
+  
+  ;; which assumes that on the server-side we have something like:
+  (pc/defresolver xyz [env _]
+    {::pc/input  #{}
+     ::pc/output [{:all-accounts [:account/id :account/owner :account/balance]}]}
+    (jdbc/execute! env "select id, owner, balance from account"))
+  ;; and similarly for :all-customers
+  )
+```
+====
+<1> We load! using Account's query because this one defines what it is we want for each of the all accounts
+<2> We instruct load! to place the data where our UI expects them, i.e. inside the AccountList component instead of at the root of the client DB
+
 #### Bonus: Tracking loading state with load markers
 
 You can ask `load!` to track the status of loading using a "load marker" and you can query for the marker to use it in your component. See the chapter {url-book}#_tracking_specific_loads[Tracking Specific Loads] in the book for details. A simple example:
