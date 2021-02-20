@@ -12,6 +12,12 @@ Different people learn best in different ways so there is no single, best way to
 
 IMPORTANT: Fulcro is likely very different from anything you have used before. You need to really *understand the key concepts first*, before trying to create something. Otherwise you set yourself up for many struggles.
 
+## Learning tips
+
+### Tip 1: Keep it simple!
+
+There is a lot of functionality that Fulcro offers. Routing, UI state machines, RAD, ... . Do not get distracted by these. Focus on using and understanding only the basic building blocks first. Once you are really comfortable with them and have internalized how the component tree, client DB, queries and idents play together and are able to build non-trivial applications with them then you can add some advanced functionality. But if you try to use too much too early you are likely to get overwhelmed and lost. So keep it simple and stick to the basics first!
+
 ## Where to start?
 
 ### Recommended approach
