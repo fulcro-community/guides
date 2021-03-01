@@ -657,6 +657,9 @@ Yes. Typically these components are different (sub)views of the same data entity
 When, where does Fulcro load data from the backend?::
 It does not. You have to `load!` the data yourself, upon a user action are at a suitable point in the lifecycle of the application. (RAD is an exception, its reports and forms do load its data but they just do what you would do manually, trigger load from their `:will-enter`. Though that is beyond the scope of this tutorial.)
 
+What is in the client DB? Is it only Fulcro-managed, `load!`-ed data of components?::
+No! The client DB is just a map and you can put there (typically through a mutation) whatever data you want, in whatever form you see fit. (Ie. it does not need to be in the entity type -> entity id -> entity props form.) While Fulcro will use it to store any data `load!`-ed from the backend - normalized, if you defined idents - you can also put there any additional data that you need. You could put there e.g. `:auth-token "XYZ..."`, `:selected-customer [:customer/id "Volvo"]`, or `:my-custom-tree {:I {:have [:kid1 :kid2 'etc]}}`.
+
 ## Next steps
 
 OK, you have completed the tutorial. What now?
