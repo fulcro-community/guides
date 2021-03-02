@@ -1,8 +1,0 @@
-# Fulcro Community Guides
-
-Community created guides for learning and using Fulcro and RAD
-
-## Learning
-
-* link:learning-fulcro.adoc[Guide to learning Fulcro] - helps to answer the questions where to start? wow to go about learning Fulcro?
-* link:minimalist-fulcro-tutorial/index.adoc[Minimalist Fulcro Tutorial] - This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY. The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.

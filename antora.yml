@@ -1,0 +1,8 @@
+# See https://docs.antora.org/antora/2.3/component-version-descriptor/
+name: guides
+title: Guides and tutorials
+version: master
+#start_page: README.adoc
+#nav:
+#- ./nav.adoc
+
