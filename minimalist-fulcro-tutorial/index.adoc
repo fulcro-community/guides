@@ -1,0 +1,1 @@
+*Moved to [https://fulcro-community.github.io/guides/tutorial-minimalist-fulcro/]*
