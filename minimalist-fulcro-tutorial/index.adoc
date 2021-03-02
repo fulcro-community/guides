@@ -1,17 +1,12 @@
 # Minimalist Fulcro Tutorial
+:toc:
+:toc-placement!:
+:toclevels: 2
 
 :url-book: https://book.fulcrologic.com/
 :url-eql: https://edn-query-language.org/eql/1.0.0
 :url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
 :url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
-
-:toc:
-:toc-placement!:
-
-.Help us improve!
-****
-Please help me to improve this tutorial. If you find anything that can/should be removed, or something unclear, or have any other comment or suggestion, please do not hesitate to ping `@holyjak` in https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro at the Clojurians] Slack (or https://clojurians.zulipchat.com/#narrow/pm-with/214497-user214497[Zulip]).
-****
 
 This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY (aside of a short section).
 The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
