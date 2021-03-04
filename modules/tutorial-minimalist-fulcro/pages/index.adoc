@@ -652,7 +652,7 @@ image::fulcro-interfaces.svg[]
 
 [qanda]
 Can different components have the same ident?::
-Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB.
+Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB. You can learn more in https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge].
 
 When, where does Fulcro load data from the backend?::
 It does not. You have to `load!` the data yourself, upon a user action are at a suitable point in the lifecycle of the application. (RAD is an exception, its reports and forms do load its data but they just do what you would do manually, trigger load from their `:will-enter`. Though that is beyond the scope of this tutorial.)
