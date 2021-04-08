@@ -350,7 +350,7 @@ If you `transact!` multiple mutations then their `action` will be processed _in 
 
 ### ``load!``-ing data
 
-### Preparation: Merging data into the client DB with `merge-component!`
+#### Preparation: Merging data into the client DB with `merge-component!`
 
 Before looking into loading remote data, we must understand how a (denormalized) tree of data can be merged and normalized into the client DB. There is no point in loading data unless we can put them into the client DB, the only place where Fulcro ever looks.
 
