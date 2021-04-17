@@ -16,6 +16,16 @@ The goal is to enable you to read, understand, and tinker with the code of a Ful
 
 toc::[]
 
+## Your learning journey
+
+You have now set out on a three part journey:
+
+. Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applicatons
+. Learn by modifying an existing app:
+  * Get your hands dirty by *playing with the fulcro-template* app AND, in parallel:
+  * Watch xref:guide-learning-fulcro:index.adoc[*Fulcro videos and study the Fulcro Developer Guide*], pose questions in the https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro Slack channel]
+. Build your own app!
+
 ## Prerequisities
 
 This tutorial expects that you have gone through an xref:tutorial-eql-pathom-overview:index.adoc[*EQL Tutorial*] (don't worry, it is simple!) and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have an idea about *Pathom v2* (<<about-pathom,see below>>).
@@ -693,6 +703,7 @@ No! The client DB is just a map and you can put there (typically through a mutat
 
 OK, you have completed the tutorial. What now?
 
+. Have a look at the xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro]
 . {url-book}#_install_fulcro_inspect[Install Fulcro Inspect] and {url-book}#_configure_chrome_development_settings[enable custom formatters in Chrome] to display Clojure data nicely in the Console - trust me, these two are indispensable!
-. Clone https://github.com/fulcrologic/fulcro-template/[fulcro-template], study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out.
+. Clone https://github.com/fulcrologic/fulcro-template/[fulcro-template], study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your data to your components tree.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
