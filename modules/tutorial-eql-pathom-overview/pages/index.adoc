@@ -107,9 +107,13 @@ configured that when asked for `:all-lists` responds with the following:
 
 == Introduction to EQL Queries
 
+All EQL interactions are considered “transactions”. A transaction that only
+contains reads is commonly called a `query` (but notice that at the syntax
+level, there is no difference).
+
 One way to think about EQL queries is to imagine them as a "description
-of the shape of the data" that you want. Said in another way, you tell
-EQL what data you want and EQL tries to "fill in the values" for you.
+of the shape of the data" that you want. Or, said in another way, you describe 
+the data you want and EQL tries to "fill in the values" for you.
 The simplest description of data is to ask for properties. Properties
 can be thought of as a "label" for data (or if you're familiar with
 datomic it's like an "attribute"). Properties are expressed as Clojure
