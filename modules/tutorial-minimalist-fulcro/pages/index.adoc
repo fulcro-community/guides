@@ -55,20 +55,21 @@ Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom i
     (case id
       1 {:person/id 1 :person/name "Diane"}
       2 {:person/id 2 :person/name "BoJack"}
+      ;; for any other id, fetch from the DB using a hypothetical fn:
       (fetch-person-from-db env id)))
 ```
 
-All the resolvers are registered with a Pathom "parser" and thus available to be used to fulfill queries. All resolvers can also take https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that it exists.)
+All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[registered with a Pathom "parser"] and thus available to be used to fulfill queries. All resolvers can also take {url-pathom-resolvers}#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that it exists.)
 
 ## A word of warning
 
-Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). According to our experience, it is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well, even if it otherwise is your preferred mode of learning. But don't worry, we will try to get you coding as soon as possible.
+Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). According to our experience, it is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well, even if it otherwise is your preferred mode of learning. But don't worry, we will try to get you https://github.com/fulcro-community/fulcro-exercises[coding as soon as possible].
 
 ## Why Fulcro?
 
-Fulcro was born out of the search for *sustainable software development* of full-stack, non-trivial (web) applications. In other words, it aims to keep complexity under control so that it does not explode as your codebase grows and time goes. It also distinguishes itself by the focus on developer-friendliness: related things are located together and it is easy to navigate (Command/Control-click) to all important code artifacts (instead of being forced to search for string IDs or keywords).
+Fulcro was born out of the search for *sustainable software development* of full-stack, non-trivial (web) applications. In other words, it aims to keep complexity under control so that it does not explode as your codebase grows and time goes. It also distinguishes itself by the focus on developer-friendliness: related things are located together and it is easy to navigate to all important code artifacts (via Command/Control-click, instead of being forced to search for string IDs or keywords).
 
-This leads to the following decisions:
+This led to the following decisions:
 
 * UI = f(state) - React came with the idea that the UI is just a pure function of data but Fulcro really means it. When you have a problem, look at the data, not the UI. 99% of the time it is there.
 * Components declare their data needs ("query") - because nobody else knows or should care about what data the component needs. And these queries are composable so that we can fetch the data needed by the whole UI (sub)tree at once.
@@ -216,7 +217,7 @@ The figure below shows how the query fragments of all components (that have a qu
 .Components, query, and data: UI -> query -> data -> UI
 image::fulcro-ui-query-data.svg[]
 
-Beware: You must not copy and paste the child's query directly but rather use `(comp/get-query <Child>)` as demonstrated. Both for DRY and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
+Beware: You must not copy and paste the child's query directly but rather use `(comp/get-query <Child>)` as demonstrated. Both for +++<abbr title="Don't Repeat Yourself">DRY</abbr>+++ and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
 
 Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. How does the data get into the client database, you ask? See the discussion of `load!` later on.
 
@@ -549,7 +550,7 @@ Here we will learn how to solve a number of common needs by leveraging the rich 
 
 [qanda]
 How to provide params to parametrized Pathom resolvers?::
-Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load :current-user User {:params {:username u :password p}})`.
+Use the option `:params` to provide extra {url-pathom-resolvers}#_parameters[parameters to the target Pathom resolver], such as pagination and filtering. Ex.: `(df/load this :current-user User {:params {:username u :password p}})`.
 
 How can I add a reference to the loaded data entity to another entity present in the client DB?::
 Similarly as with `merge-component!` but instead of specifying directly `:append`, `:prepend`, and `:replace`, you specify the `:target` option with a target from https://github.com/fulcrologic/fulcro/blob/develop/src/main/com/fulcrologic/fulcro/algorithms/data_targeting.cljc[the `targeting` namespace] such as `(append-to <path>)`, `(prepend-to <path>)`, `(replace-at <path>)` or any combination of these by leveraging `(multiple-targets ...)`. See the example above.
@@ -658,7 +659,7 @@ You can ask `load!` to track the status of loading using a "load marker" and you
 ====
 ```clojure
 ;; Somewhere during the app lifecycle:
-(df/load! [:list/id :friends] Person {:marker :friends-list}) ; <1>
+(df/load! this [:list/id :friends] Person {:marker :friends-list}) ; <1>
 
 ;; The component:
 (defsc FriendsList [_ props]
