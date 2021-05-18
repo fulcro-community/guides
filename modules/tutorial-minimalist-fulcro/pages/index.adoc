@@ -20,7 +20,7 @@ toc::[]
 
 You have now set out on a three part journey:
 
-. Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applicatons
+. Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applicatons and solidify it by doing the accompanying https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro tutorial exercises].
 . Learn by modifying an existing app:
   * Get your hands dirty by *playing with the fulcro-template* app AND, in parallel:
   * Watch xref:guide-learning-fulcro:index.adoc[*Fulcro videos and study the Fulcro Developer Guide*], pose questions in the https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro Slack channel]
@@ -28,7 +28,7 @@ You have now set out on a three part journey:
 
 ## Prerequisities
 
-This tutorial expects that you have gone through an xref:tutorial-eql-pathom-overview:index.adoc[*EQL Tutorial*] (don't worry, it is simple!) and are familiar with EQL, queries, joins. It will not work without that knowledge. You also need to have an idea about *Pathom v2* (<<about-pathom,see below>>).
+This tutorial expects that you have gone through an xref:tutorial-eql-pathom-overview:index.adoc[*EQL Tutorial*] (don't worry, it is simple!) and are familiar with EQL, queries, joins (property and ident ones). It will not work without that knowledge. You also need to have an idea about *Pathom v2* (<<about-pathom,see below>>).
 
 It also assumes that you are already somewhat https://dzone.com/articles/fun-with-react-a-quick-overview[familiar with *React*] and thus with concepts such as https://reactjs.org/docs/rendering-elements.html[elements], https://reactjs.org/docs/components-and-props.html[components and prosp], https://reactjs.org/warnings/legacy-factories.html[factories], https://reactjs.org/docs/handling-events.html[handling of events], a tree of components, passing "props" from the root component, UI as a function of data. (If you know what these are then you are good. A cursory knowledge of React should suffice for now, unless you want to do something fancy. Later on you might also want to learn about https://reactjs.org/docs/state-and-lifecycle.html[local state and lifecycle methods] and https://reactjs.org/docs/hooks-intro.html[hooks] but you can get on without these for a while.)
 
@@ -705,6 +705,7 @@ No! The client DB is just a map and you can put there (typically through a mutat
 
 OK, you have completed the tutorial. What now?
 
+. Do the https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro tutorial exercises] to check and challenge your theoretical knowledge in practice
 . Have a look at the xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro]
 . {url-book}#_install_fulcro_inspect[Install Fulcro Inspect] and {url-book}#_configure_chrome_development_settings[enable custom formatters in Chrome] to display Clojure data nicely in the Console - trust me, these two are indispensable!
 . Clone https://github.com/fulcrologic/fulcro-template/[fulcro-template], study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your data to your components tree.
