@@ -501,6 +501,8 @@ Now, what if we don't only want to add the data itself but also want to add refe
 
 We have seen that in addition to merging data into the client DB we can also _append_ and _prepend_ references to it to to-many reference properties on other entities (such as `:list/people`), insert them into to-one properties with `:replace` etc. And we can do as many such operations as we want at once.
 
+TIP: Outside of the context of `merge-component!`, when you are changing data directly in a mutation and want to append/prepend/replace a reference to it, you can use `targeting/integrate-ident*`. It takes the same keyword-value argument pairs as `merge-component!`.
+
 #### Loading remote data
 
 Now that you understand the merging of data into the client DB, you can load data with `df/load!`. Instead of the data tree it takes a property or an ident that Pathom can resolve (i.e. there needs to be a {url-pathom-resolvers}[Pathom resolver] available to provide the data you are asking for). Using that and the component's query, it obtains a data tree from Pathom and then normalizes and merges it.
