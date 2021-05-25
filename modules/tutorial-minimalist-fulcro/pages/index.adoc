@@ -391,6 +391,8 @@ That is so that the mutation can be submitted over the wire to the backend as-is
 
 TIP: There are ways to {url-book}#CircularRefs[avoid a circular dependency between a component and a mutation], such as quoting and using the {url-book}#_use_the_component_registry[component registry] to look up a component class based on its name.
 
+TIP: The `mutations` namespace has a bunch of helper functions for transacting built-in mutations to set the props of the current component, such as `set-value!`, `set-integer!`, `toggle!` (for booleans), etc.
+
 #### transact!-ing multiple mutations
 
 If you `transact!` multiple mutations then their `action` will be processed _in order_. However, if a mutation has a remote part, Fulcro just sends it without waiting for it to finish before going on to process the next mutation. If you want to only issue a follow-up mutation after the remote part of the initial mutation has finished, do so from its `ok-action`.
