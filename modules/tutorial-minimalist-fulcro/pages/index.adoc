@@ -393,6 +393,8 @@ TIP: There are ways to {url-book}#CircularRefs[avoid a circular dependency betwe
 
 TIP: The `mutations` namespace has a bunch of helper functions for transacting built-in mutations to set the props of the current component, such as `set-value!`, `set-integer!`, `toggle!` (for booleans), etc.
 
+TIP: `com.fulcrologic.fulcro.algorithms.normalized-state` has useful helpers for changing the client DB, such as `remove-entity` (which also removes all references to it), `integrate-ident` (for adding references), `remove-ident` (for removing from a list), `swap!->`, etc.
+
 #### transact!-ing multiple mutations
 
 If you `transact!` multiple mutations then their `action` will be processed _in order_. However, if a mutation has a remote part, Fulcro just sends it without waiting for it to finish before going on to process the next mutation. If you want to only issue a follow-up mutation after the remote part of the initial mutation has finished, do so from its `ok-action`.
