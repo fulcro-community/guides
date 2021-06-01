@@ -101,7 +101,7 @@ We will briefly describe the key terms we are going to use a lot. Some are later
 
 [#app]#App#::
 A reference to the current Fulcro application, containing configuration, the client DB, etc. Produced by `app/fulcro-app` and used when calling `transact!` or `load!` when a component's `this` is not available. Referred to as `app` in code samples.
-Client DB::
+[#def-clientdb]#Client DB#::
 The client-side cache of data. It is a map of maps: 
 +
 Entity name -> entity id value -> properties of the entity
