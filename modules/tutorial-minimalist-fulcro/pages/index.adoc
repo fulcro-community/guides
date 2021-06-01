@@ -30,7 +30,7 @@ You have now set out on a three part journey:
 
 This tutorial expects that you have gone through an xref:tutorial-eql-pathom-overview:index.adoc[*EQL Tutorial*] (don't worry, it is simple!) and are familiar with EQL, queries, joins (property and ident ones). It will not work without that knowledge. You also need to have an idea about *Pathom v2* (<<about-pathom,see below>>).
 
-It also assumes that you are already somewhat https://dzone.com/articles/fun-with-react-a-quick-overview[familiar with *React*] and thus with concepts such as https://reactjs.org/docs/rendering-elements.html[elements], https://reactjs.org/docs/components-and-props.html[components and props], https://reactjs.org/warnings/legacy-factories.html[factories], https://reactjs.org/docs/handling-events.html[handling of events], a tree of components, passing "props" from the root component, UI as a function of data. (If you know what these are then you are good. A cursory knowledge of React should suffice for now, unless you want to do something fancy. Later on you might also want to learn about https://reactjs.org/docs/state-and-lifecycle.html[local state and lifecycle methods] and https://reactjs.org/docs/hooks-intro.html[hooks] but you can get on without these for a while.)
+It also assumes that you are already somewhat https://dzone.com/articles/fun-with-react-a-quick-overview[familiar with *React*] and thus with concepts such as https://reactjs.org/docs/rendering-elements.html[elements], https://reactjs.org/docs/components-and-props.html[components and props], https://reactjs.org/warnings/legacy-factories.html[factories], https://reactjs.org/docs/handling-events.html[handling of events], https://reactjs.org/docs/dom-elements.html#style[styling of elements], a tree of components, passing "props" from the root component, UI as a function of data. (If you know what these are then you are good. A cursory knowledge of React should suffice for now, unless you want to do something fancy. Later on you might also want to learn about https://reactjs.org/docs/state-and-lifecycle.html[local state and lifecycle methods] and https://reactjs.org/docs/hooks-intro.html[hooks] but you can get on without these for a while.)
 
 It is helpful to know a little about the principles of *GraphQL* (see this https://hackernoon.com/3-minute-introduction-to-graphql-2c4e28ed528[3 Minute Introduction to GraphQL] and, if curious, also this https://www.howtographql.com/basics/1-graphql-is-the-better-rest/[GraphQL is the better REST] for more insight into the value proposition of GraphQL and EQL).
 
@@ -294,13 +294,16 @@ and here is a minimal example:
 The signature is:
 
 ```clojure
-(dom/<tag>
+(dom/<tag> ; or <ns>/<Fulcro component factory name> for components
   <[optional] keyword encoding classes and an element ID> ; <1>
   <[optional] map of the tag's attributes (or React props)> ; <2>
   <[optional] children>) ; <3>
 ```
 <1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to `{:classes [<class name> ...], :id <id>}`.
 <2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class names, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
++
+IMPORTANT: While React elements take JS maps with string keywords, Fulcro dom elements and component factories can take (possibly nested) Clojure maps and sequences and use keyword keys.
+
 <3> Zero or more children
 
 ##### Additional notes
