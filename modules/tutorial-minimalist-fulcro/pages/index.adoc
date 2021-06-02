@@ -116,6 +116,8 @@ For convenience, we use the name of the _id property_ as the "name" of the entit
 ```
 +
 It is fed by _initial data_ and by _loading_ data from the backend and can be changed by _mutations_.
++
+TIP: To really understand how and why Fulcro stores data and the need for component queries, watch the excellent https://www.youtube.com/watch?v=r1bMQxTr2QA[Grokking Fulcro – Part 3a Stuffing Data Into a UI (without choking)]
 Component (a.k.a. UI Component)::
 A Fulcro component is a React component with optional meta data, such as _query_ and _ident_. It encapsulates a part of the user interface and often contains other components. We call it _stateful_ if it actually has a query, otherwise we say it is _stateless_ or UI-only.
 Data Entity::
