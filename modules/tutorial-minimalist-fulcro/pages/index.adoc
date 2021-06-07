@@ -167,7 +167,7 @@ You will learn:
 * How `load!` submits a mutation that loads data from the backend, normalizes them, and stores them into the client database
 * How data is stored in the normalized (de-duplicated) client database
 
-### The anatomy of a Fulcro component: query, ident, body
+### The anatomy of a Fulcro component: props, query, ident, body [[_the_anatomy_of_a_fulcro_component_query_ident_body]]
 
 Fulcro components, which are also React components, are the heart of a Fulcro application. Let's explore them:
 
@@ -201,6 +201,54 @@ _(Assuming the {url-book}#_common_prefixes_and_namespaces[same `:require` aliase
 Notice that `defsc` produces a JS _class_, which we turn into a React factory with `comp/factory` (customary we kebab-case its name and prefix it with `ui-`). The factory can then be used to create React elements (as is demonstrated with the `ui-address` factory). (JSX does this for you so that you can use classes directly. Here we want more control.)
 
 Also notice that `:query` and props mirror each other. Fulcro will actually warn you if there is a mismatch between the two, thus preventing many errors.
+
+#### Component's props
+
+The second argument to a `defsc` is the props (short for properties) - map of data passed in by the parent component, and normally derived based on the component's query. They are the same as https://reactjs.org/docs/components-and-props.html[React props], with few noteworthy additions:
+
+* While React props must be a JavaScript map with string keys, Fulcro props - both for `defsc` components, `dom/<tag>` components, and vanilla JS components link:++{url-book}#_factory_functions_for_js_react_components++[wrapped with `interop/react-factory`] - can be and typically are a _Clojure_ map (possibly containing nested Clojure data structures) with (typically qualified) keyword keys. (Fulcro actually stores its props under "fulcro$value" in the React JS map, but that is transparent to you.)
+* You can use lazy sequences of children (produced by `map` etc.).
+
+.On qualified keywords
+****
+We use qualified keywords a lot to avoid name conflicts and communicate ownership. If it is new to you, here is a brief summary of how to use them.
+
+Destructuring:
+
+```clojure
+;; Given:
+(def props {:car/make "Škoda", :ui/selected? false})
+;; 1. Destructure using (multiple) :<ns>/keys [..]:
+(let [{:car/keys [make], :ui/keys [selected?]} props]
+  (println make selected?))
+;; 2. Destructure using :keys [<ns1>/key1, <ns2>/key2, ...]:
+(let [{:keys [care/make ui/selected?]} props]
+  (println make selected?))
+;; 3. Destructure manually using <symbol> <qualified keyword> pairs:
+(let [{care-make :care/make, selected? :ui/selected?]} props]
+  (println care-make selected?))
+;; all of the above print the same result: `Škoda false`
+```
+
+Aliases:
+
+When we require a namespace, we can give it an alias as in `(:require [my.long.ns :as myns]])` and we can use the alias in the qualified keywords - the trick is to use double instead of single colon in front of it, i.e. `::<ns alias>/kwd`. And if we leave out the alias, as in `::kwd`, it expands to the current ns, i.e. to `:<current ns>/kwd`.
+
+```clojure
+(ns myns (:require [my.domain.car :as car]))
+(def props {::car/make "Škoda", my.domain.car/year 2020, ::sold? true})
+(let [{::car/keys [make year], ::keys [sold?], sold2? :myns/sold?} props] 
+  (println make year sold? sold2?))
+; OUT> Škoda 2020 true true
+```
+
+Namespaced maps:
+
+Instead of writing `{:person/id 1, :person/name "Jo"}` we can also write `#:person{:id 1, :name "Jo"}`. https://clojure.org/reference/reader#_maps[The reader literal #:<ns><map>] simply produces a map with all keys namespaced to the given ns.
+
+You can read more in the https://clojure.org/guides/destructuring#_associative_destructuring[Clojure Destructuring Guide].
+****
+
 
 #### Component's `:query`
 
@@ -303,8 +351,6 @@ The signature is:
 ```
 <1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to `{:classes [<class name> ...], :id <id>}`.
 <2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class names, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
-+
-IMPORTANT: While React elements take JS maps with string keywords, Fulcro dom elements and component factories can take (possibly nested) Clojure maps and sequences and use keyword keys.
 
 <3> Zero or more children
 
