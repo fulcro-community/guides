@@ -236,7 +236,7 @@ When we require a namespace, we can give it an alias as in `(:require [my.long.n
 
 ```clojure
 (ns myns (:require [my.domain.car :as car]))
-(def props {::car/make "Škoda", my.domain.car/year 2020, ::sold? true})
+(def props {::car/make "Škoda", :my.domain.car/year 2020, ::sold? true})
 (let [{::car/keys [make year], ::keys [sold?], sold2? :myns/sold?} props] 
   (println make year sold? sold2?))
 ; OUT> Škoda 2020 true true
