@@ -789,4 +789,4 @@ OK, you have completed the tutorial. What now?
 
 ## Help us get better!
 
-TIP: Help me improve this tutorial and build follow-up learning materials by sharing your experiences https://forms.gle/TCRDixJx4t1r9jZp7[and needs in this brief survey]. Thanks a lot!
+IMPORTANT: Help me improve this tutorial and build follow-up learning materials by sharing your experiences https://forms.gle/TCRDixJx4t1r9jZp7[and needs in this brief survey]. Thanks a lot!
