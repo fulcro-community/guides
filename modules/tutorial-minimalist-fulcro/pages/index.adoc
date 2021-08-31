@@ -20,7 +20,8 @@ toc::[]
 
 You have now set out on a three part journey:
 
-. Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applications and solidify it by doing the accompanying https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro tutorial exercises].
+. Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applications and solidify it by doing the accompanying https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro *tutorial exercises*].
+. *Read real-world Fulcro code* to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
 . Learn by modifying an existing app:
   * Get your hands dirty by *playing with the fulcro-template* app AND, in parallel:
   * Watch xref:guide-learning-fulcro:index.adoc[*Fulcro videos and study the Fulcro Developer Guide*], pose questions in the https://app.slack.com/client/T03RZGPFR/C68M60S4F[#fulcro Slack channel]
@@ -781,5 +782,11 @@ OK, you have completed the tutorial. What now?
 . Do the https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro tutorial exercises] to check and challenge your theoretical knowledge in practice.
 . Come back and re-read this tutorial. You will likely understand it much better and get things you overlooked upon the first reading.
 . Have a look at the xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro].
-. Clone https://github.com/fulcrologic/fulcro-template/[fulcro-template], study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your frontend data to your components tree.
+. Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
+. Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your frontend data to your components tree.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
+. Create your own app! For something easy to understand and start with, check out the minimalist-fulcro-template-backendless[https://github.com/holyjak/minimalist-fulcro-template-backendless].
+
+## Help us get better!
+
+TIP: Help me improve this tutorial and build follow-up learning materials by sharing your experiences https://forms.gle/TCRDixJx4t1r9jZp7[and needs in this brief survey]. Thanks a lot!
