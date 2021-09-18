@@ -1,0 +1,96 @@
+# Advanced Minimalist Fulcro Tutorial
+:toc:
+:toc-placement!:
+:toclevels: 2
+:description: A follow-up to the Minimalist Fulcro Tutorial that focuses on a few non-essential yet often necessary topics in the traditional minimalist way.
+
+:url-book: https://book.fulcrologic.com/
+:url-eql: https://edn-query-language.org/eql/1.0.0
+:url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
+
+Author: https://holyjak.cz/[Jakub Holý] & contributors
+
+A follow-up to the Minimalist Fulcro Tutorial that focuses on a few non-essential yet often necessary topics in the traditional minimalist way.
+
+WARNING: This is work in progress, at a very early stage. Come back in a few weeks or months.
+
+toc::[]
+
+## Troubleshooting Fulcro
+
+It is essential for your productivity that you get good at troubleshooting Fulcro, i.e. detecting why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect - especially the DB view, Transactions, and Network - at maximum. I claim that:
+
+> In Fulcro, UI is a true function of data and in 90% cases you only need to look at the data and their connections - and perhaps transactions - to understand what is wrong. In 90% of these cases that beginner encounter, the problem is a broken connection between data. (Not including `get-query` in the parent's query, not setting/propagating up initial state where it is necessary.)
+
+Hopefully you have got somewhat proficient with Fulcro Inspect when doing the https://github.com/fulcro-community/fulcro-exercises[Fulcro exercises]. Remember to play with it and dig around to really understand your application while it is working and as you are changing it so your skills will be sharp when you need them. The https://www.youtube.com/playlist?list=PLYvJiiE4TAijBAvO-R0PO8plSto4wtoQu[Learning Fulcro - troubleshooting demos] - a series of short screencasts demonstrating how to troubleshoot various problems in a Fulcro app - can help you.
+
+Finally, remember to use the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps.
+
+## What to do when UI Components and Data Entities do not match 1:1
+
+In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy (no data entity)? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after you click the summary? (Both display different views of the same data entity.)
+
+The article https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] so I only provide a brief summary here.
+
+A UI-only ("stateless") component, such as the CoolAnimationThingy, with no query of its own:: 
+Solution: The nearest stateful (with a query) ancestor component (Team in our example) becomes the true parent of any stateful children of the stateless component, composes their query and initial state, creates them and passes them to the stateless component as its children.
+A Data-only component (a.k.a. a query component)::
+This is mostly only necessary when describing to Fulcro the data returned by a mutation, if it does not match an existing component. Solution (since Fulcro 3.5): use `rc/nc`; ex.: `(com.fulcrologic.fulcro.raw.components/nc [:user/id :user/email])`.
+Multiple UI views of a single Data Entity::
+This the case of the PlayerSummary and PlayerDetails and it is simple: they both use the same `:ident` (here, `:player/id`) and query for whatever they need.
+A Data Entity spread across multiple (sibling) components::
+Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI in multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" (from the data view) children, include their query in the actual entity component as usual but under a made-up key starting with `:>/` (the habitual Pathom "placeholder" ns).
+Accessing top-level data from a nested component::
+Sometimes you have a piece of data that you need at multiple place in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `[... [:current-user '_] ...]`, which is an ident with the magical value `_` meaning "all of it". 
+In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer. 
+
+## Routing
+
+In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. In Fulcro, you also perhaps want to only load data for the active parts. This is the task of routing.
+
+Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
+
+1. Make Routers that have multiple target components and only display the active one (i.e. the one you have routed to)
+2. The routers can be nested, e.g. to display a "page" and a "tab" within the page
+3. Bind the route to the URL (Fulcro's routing is fully independent of the URL but the two can be hooked together)
+4. Load data when the component is about to be displayed
+5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
+6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
+7. TODO: Timeouts, errors, ...
+
+### The bare essentials of Fulcro routing
+
+.Bare essentials of Fulcro routing
+====
+```clojure
+(defsc AllPeople [_ props]
+  {:ident (fn [] [:component/id ::AllPeople]
+   :query [{[:person/id '_] [:person/id :person/name]
+   :route-segment ["all"]}])}
+   (dom/div
+     (dom/h3 "All People")
+     (map (fn [{:person/keys [id name]}] (dom/p {:key id} name)) 
+          (get props '[:person/id _]))))
+
+(defsc Person [_ {:person/keys [name biography]}]
+  {:ident :person/id
+   :query [:person/id :person/name :person/biography]
+   :route-segment ["person" :person/id]}
+  (dom/p (dom/strong name) ": " biography))
+
+(dr/defrouter MyRouter
+  {:router-targets [AllPeople Person]})
+```
+====
+
+(dr/change-route! SPA ["landing-page"])
+
+IMPORTANT: Singletons. 1+ targets (1 <> dynamic segment).
+
+## Creating and editing data entities
+
+### Tempids and creating new entities
+
+### Form state management
+
+## Etc... (UISM, dynamic.recursive/union queries, ...)

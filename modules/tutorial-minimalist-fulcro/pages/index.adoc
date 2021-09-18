@@ -9,7 +9,7 @@
 :url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
 :url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
 
-Author: https://blog.jakubholy.net/[Jakub Holý] & contributors
+Author: https://holyjak.cz/[Jakub Holý] & contributors
 
 This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY (aside of a short section).
 The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
