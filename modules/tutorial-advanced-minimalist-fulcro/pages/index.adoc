@@ -1,4 +1,4 @@
-# Advanced Minimalist Fulcro Tutorial
+= Advanced Minimalist Fulcro Tutorial
 :toc:
 :toc-placement!:
 :toclevels: 2
@@ -16,7 +16,7 @@ WARNING: This is work in progress, at a very early stage. Come back in a few wee
 
 toc::[]
 
-## Troubleshooting Fulcro
+== Troubleshooting Fulcro
 
 It is essential for your productivity that you get good at troubleshooting Fulcro, i.e. detecting why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect - especially the DB view, Transactions, and Network - at maximum. I claim that:
 
@@ -24,9 +24,11 @@ It is essential for your productivity that you get good at troubleshooting Fulcr
 
 Hopefully you have got somewhat proficient with Fulcro Inspect when doing the https://github.com/fulcro-community/fulcro-exercises[Fulcro exercises]. Remember to play with it and dig around to really understand your application while it is working and as you are changing it so your skills will be sharp when you need them. The https://www.youtube.com/playlist?list=PLYvJiiE4TAijBAvO-R0PO8plSto4wtoQu[Learning Fulcro - troubleshooting demos] - a series of short screencasts demonstrating how to troubleshoot various problems in a Fulcro app - can help you.
 
-Finally, remember to use the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps.
+Finally, remember to consult the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps. I would also highly recommend that you use https://github.com/holyjak/fulcro-troubleshooting[fulcro-troubleshooting] to get notified early and visibly about possible problems and to watch out for Fulcro warnings in the browser Console.
 
-## What to do when UI Components and Data Entities do not match 1:1
+TIP: Remember that only rarely you should be clicking around your UI and observing its changes. In Fulcro, you can trigger essentially any action (`transact!`, ...) from the REPL, you can use functions to simulate turning a query into the props tree, etc. Use these tools instead - they are more more effective and allow you to zoom in on the problem much more precisely.
+
+== What to do when UI Components and Data Entities do not match 1:1
 
 In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy (no data entity)? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after you click the summary? (Both display different views of the same data entity.)
 
@@ -44,7 +46,7 @@ Accessing top-level data from a nested component::
 Sometimes you have a piece of data that you need at multiple place in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `[... [:current-user '_] ...]`, which is an ident with the magical value `_` meaning "all of it". 
 In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer. 
 
-## Routing
+== Routing
 
 In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. In Fulcro, you also perhaps want to only load data for the active parts. This is the task of routing.
 
@@ -58,39 +60,94 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
 7. TODO: Timeouts, errors, ...
 
-### The bare essentials of Fulcro routing
+=== The bare essentials of Fulcro routing
 
 .Bare essentials of Fulcro routing
 ====
 ```clojure
-(defsc AllPeople [_ props]
-  {:ident (fn [] [:component/id ::AllPeople]
-   :query [{[:person/id '_] [:person/id :person/name]
-   :route-segment ["all"]}])}
+(defsc AllPeople [_ {:keys [all-people]}]
+  {:ident (fn [] [:component/id ::AllPeople])
+   :query [{:all-people [:person/id :person/name]}]
+   :initial-state {}
+   :route-segment ["all"]}
    (dom/div
      (dom/h3 "All People")
-     (map (fn [{:person/keys [id name]}] (dom/p {:key id} name)) 
-          (get props '[:person/id _]))))
+     (dom/ul
+       (mapv (fn [{:person/keys [id name]}] (dom/li {:key id} name))
+         all-people))))
 
-(defsc Person [_ {:person/keys [name biography]}]
+(defsc Person [_ {:person/keys [id name biography]}]
   {:ident :person/id
    :query [:person/id :person/name :person/biography]
-   :route-segment ["person" :person/id]}
-  (dom/p (dom/strong name) ": " biography))
+   :initial-state {}
+   :will-enter (fn [app route-params]
+                 (dr/route-immediate
+                   [:person/id
+                    (js/parseInt (:person-id route-params))]))
+   :route-segment ["person" :person-id]}
+  (dom/p (str "Person #" id ": ") (dom/strong name) " - " biography))
 
-(dr/defrouter MyRouter
+(dr/defrouter MyRouter [_ _]
   {:router-targets [AllPeople Person]})
+
+(def ui-my-router (comp/factory MyRouter))
+
+(defsc Root [this {:ui/keys [router]}]
+  {:query [{:ui/router (comp/get-query MyRouter)}]
+   :initial-state {:ui/router {}}}
+  (dom/div
+    (dom/p (dom/button {:onClick #(dr/change-route! this ["all"])} "All")
+           (dom/button {:onClick #(dr/change-route! this ["person" "123"])} "Person 123"))
+    (ui-my-router router)))
+
+(defn init [app]
+  ;; Avoid startup async timing issues by pre-initializing things before mount
+  (app/set-root! app Root {:initialize-state? true})
+  (dr/initialize! app)
+  (run! #(merge/merge-component! app Person %
+           :append (conj (comp/get-ident AllPeople {}) :all-people))
+    [#:person{:id 100 :name "Kamča" :biography "..."}
+     #:person{:id 123 :name "Doubravka" :biography "..."}])
+  (dr/change-route! app ["all"]) ; after set-root or mount!
+   ;; or: (dr/change-route! app (dr/path-to AllPeople))
+  (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
 
-(dr/change-route! SPA ["landing-page"])
+See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
+
+WARNING: Always route to a leaf!
+
+=== Binding the route to the URL
+
+=== Loading data on displaying a component (for the first time)
+
++ handling err, "loading..."
+
+=== A brief overview of useful dr/* functions
+
+=== TODO
+
+.TODO
+----
+Ideas:
+
+* How does it work?
+** Set `::dr/current-route` to the selected target's query, pass
+   `(::dr/current-route props)` to the target comp. as its props
+   (+ pass through any computed props)
+* Use cases: top router a la RAD x ... ?
+
+> An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine. 
+> -- the Book, https://book.fulcrologic.com/#_setting_the_route_early
 
 IMPORTANT: Singletons. 1+ targets (1 <> dynamic segment).
+----
 
-## Creating and editing data entities
+== Creating and editing data entities
 
-### Tempids and creating new entities
+=== Tempids and creating new entities
 
-### Form state management
+=== Form state management
 
-## Etc... (UISM, dynamic.recursive/union queries, ...)
+== Etc... (UISM, dynamic.recursive/union queries, ...)
