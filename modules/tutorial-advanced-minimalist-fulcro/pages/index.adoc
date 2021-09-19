@@ -62,14 +62,24 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 === The bare essentials of Fulcro routing
 
+Let's explore a minimalist example of routing. This is the UI that we are creating:
+
+image::bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router"]
+
+image::../images/bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router"]
+
++++<!--FIXME: Remove the rel. path img above-->+++
+
+and this is the code:
+
 .Bare essentials of Fulcro routing
 ====
 ```clojure
 (defsc AllPeople [_ {:keys [all-people]}]
   {:ident (fn [] [:component/id ::AllPeople])
    :query [{:all-people [:person/id :person/name]}]
-   :initial-state {}
-   :route-segment ["all"]}
+   :initial-state {}                                 ; <1>
+   :route-segment ["all"]}                           ; <2>
    (dom/div
      (dom/h3 "All People")
      (dom/ul
@@ -80,7 +90,7 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
   {:ident :person/id
    :query [:person/id :person/name :person/biography]
    :initial-state {}
-   :will-enter (fn [app route-params]
+   :will-enter (fn [app route-params]                  ; <3>
                  (dr/route-immediate
                    [:person/id
                     (js/parseInt (:person-id route-params))]))
@@ -113,6 +123,8 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
   (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
+<1> `:initial-state`
+<2> `:route-segment`
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
