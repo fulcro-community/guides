@@ -44,16 +44,18 @@ A Data Entity spread across multiple (sibling) components::
 Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI in multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" (from the data view) children, include their query in the actual entity component as usual but under a made-up key starting with `:>/` (the habitual Pathom "placeholder" ns).
 Accessing top-level data from a nested component::
 Sometimes you have a piece of data that you need at multiple place in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `[... [:current-user '_] ...]`, which is an ident with the magical value `_` meaning "all of it". 
-In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer. 
+In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer.
+Inserting a stateful UI component between a parent-child entities::
+This essentially explains why inserting a router component into your UI does not break the query.
 
 == Routing
 
-In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. In Fulcro, you also perhaps want to only load data for the active parts. This is the task of routing.
+In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to load the necessary data - and perhaps also the code -  only when you are are about to display the relevant part of the UI. This is the task of routing.
 
 Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 1. Make Routers that have multiple target components and only display the active one (i.e. the one you have routed to)
-2. The routers can be nested, e.g. to display a "page" and a "tab" within the page
+2. The routers can be nested, e.g. to display a particular "page" and then a particular "tab" within it
 3. Bind the route to the URL (Fulcro's routing is fully independent of the URL but the two can be hooked together)
 4. Load data when the component is about to be displayed
 5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
@@ -62,17 +64,24 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 === The bare essentials of Fulcro routing
 
+To add routing to your application, you need to:
+
+1. Create a router with `dr/defrouter` (which just produces a `defsc`) and with the list of the target components, of which it should display one
+2. Give each target component a unique _route segment_ - think of it as a URL - so that you can route to this target. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs
+.. The component can use the `:will-enter` hook to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
+3. Initialize everything and route to the target you want displayed via `dr/change-route`
+
 Let's explore a minimalist example of routing. This is the UI that we are creating:
 
-image::bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router"]
+image::bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router (via wiredjs.com)"]
 
-image::../images/bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router"]
+image::../images/bare-essentials-routing-ui-mockup.png["FIXME: remove"]
 
-+++<!--FIXME: Remove the rel. path img above-->+++
++++<!--FIXME: Remove the relative path img above-->+++
 
-and this is the code:
+We show either all the people or just a single person. This is the code:
 
-.Bare essentials of Fulcro routing
+.Bare essentials of Fulcro routing (1st half - router & targets)
 ====
 ```clojure
 (defsc AllPeople [_ {:keys [all-people]}]
@@ -89,46 +98,57 @@ and this is the code:
 (defsc Person [_ {:person/keys [id name biography]}]
   {:ident :person/id
    :query [:person/id :person/name :person/biography]
-   :initial-state {}
+   :initial-state {}                                   ; <1>
+   :route-segment ["person" :person-id]                ; <2>
    :will-enter (fn [app route-params]                  ; <3>
                  (dr/route-immediate
                    [:person/id
-                    (js/parseInt (:person-id route-params))]))
-   :route-segment ["person" :person-id]}
+                    (js/parseInt (:person-id route-params))]))}
   (dom/p (str "Person #" id ": ") (dom/strong name) " - " biography))
 
-(dr/defrouter MyRouter [_ _]
-  {:router-targets [AllPeople Person]})
+(dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ; <4>
+```
+====
+<1> `:initial-state`
+<2> `:route-segment`
+<3> `:will-enter`, `dr/route-immediate`
+<4> defrouter , :router-targets 
 
+.Bare essentials of Fulcro routing (2nd half - Root and init)
+====
+```clojure
 (def ui-my-router (comp/factory MyRouter))
 
 (defsc Root [this {:ui/keys [router]}]
-  {:query [{:ui/router (comp/get-query MyRouter)}]
-   :initial-state {:ui/router {}}}
+  {:query [{:ui/router (comp/get-query MyRouter)}]           ; <1>
+   :initial-state {:ui/router {}}}                           ; <2>
   (dom/div
-    (dom/p (dom/button {:onClick #(dr/change-route! this ["all"])} "All")
+    (dom/p (dom/button {:onClick #(dr/change-route! this ["all"])} "All") ; <3>
            (dom/button {:onClick #(dr/change-route! this ["person" "123"])} "Person 123"))
     (ui-my-router router)))
 
 (defn init [app]
   ;; Avoid startup async timing issues by pre-initializing things before mount
   (app/set-root! app Root {:initialize-state? true})
-  (dr/initialize! app)
+  (dr/initialize! app)                                         ; <4>
   (run! #(merge/merge-component! app Person %
            :append (conj (comp/get-ident AllPeople {}) :all-people))
     [#:person{:id 100 :name "Kamča" :biography "..."}
      #:person{:id 123 :name "Doubravka" :biography "..."}])
-  (dr/change-route! app ["all"]) ; after set-root or mount!
+  (dr/change-route! app ["all"]) ; after set-root or mount!    ; <5>
    ;; or: (dr/change-route! app (dr/path-to AllPeople))
   (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
-<1> `:initial-state`
-<2> `:route-segment`
+<1> root q. :ui/router
+<2> initial-state propagation
+<3> dr/change-route! ; also dr/path-to
+<4> dr/initialize!
+<5> init. change-route!
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
-WARNING: Always route to a leaf!
+WARNING: Always route to a leaf! Always initialize all routers in the UI tree.
 
 === Binding the route to the URL
 
@@ -148,6 +168,7 @@ Ideas:
 ** Set `::dr/current-route` to the selected target's query, pass
    `(::dr/current-route props)` to the target comp. as its props
    (+ pass through any computed props)
+** https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/#_inserting_a_stateful_ui_component_between_a_parent_child_entities[When UI and Entities Diverge: Inserting a stateful UI component between a parent-child entities]
 * Use cases: top router a la RAD x ... ?
 
 > An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine. 
