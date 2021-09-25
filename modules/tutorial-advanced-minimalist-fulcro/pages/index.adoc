@@ -50,7 +50,7 @@ This essentially explains why inserting a router component into your UI does not
 
 == Routing
 
-In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to load the necessary data - and perhaps also the code -  only when you are are about to display the relevant part of the UI. This is the task of routing.
+In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to load the necessary data - and perhaps also the code -  only when you are are about to display the relevant part of the UI. Often you also want to bind the route to the URL. All this is the task of routing.
 
 Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
@@ -60,14 +60,15 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 4. Load data when the component is about to be displayed
 5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
 6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
-7. TODO: Timeouts, errors, ...
+7. Only query for the props of its current target from the client DB, which is important for the performance of bigger apps
+8. TODO: Timeouts, errors, ...
 
 === The bare essentials of Fulcro routing
 
 To add routing to your application, you need to:
 
 1. Create a router with `dr/defrouter` (which just produces a `defsc`) and with the list of the target components, of which it should display one
-2. Give each target component a unique _route segment_ - think of it as a URL - so that you can route to this target. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs
+2. Give each target component a unique _route segment_ - think of it as a URL - so that you can route to this target. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers.
 .. The component can use the `:will-enter` hook to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
 3. Initialize everything and route to the target you want displayed via `dr/change-route`
 
@@ -99,20 +100,23 @@ We show either all the people or just a single person. This is the code:
   {:ident :person/id
    :query [:person/id :person/name :person/biography]
    :initial-state {}                                   ; <1>
-   :route-segment ["person" :person-id]                ; <2>
-   :will-enter (fn [app route-params]                  ; <3>
+   :route-segment ["person" :person-id]                ; <3>
+   :will-enter (fn [app route-params]                  ; <4>
                  (dr/route-immediate
                    [:person/id
                     (js/parseInt (:person-id route-params))]))}
   (dom/p (str "Person #" id ": ") (dom/strong name) " - " biography))
 
-(dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ; <4>
+(dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ; <5>
 ```
 ====
-<1> `:initial-state`
-<2> `:route-segment`
-<3> `:will-enter`, `dr/route-immediate`
-<4> defrouter , :router-targets 
+<1> A router target _must always_ have a non-nil initial state (so at least an empty `{}`)
+<2> A target's `:route-segment` assigns it a routing path (relative to an ancestor target, if any)
+<3> The `:route-segment` may also contain placeholders to capture parameters from the route (here `:person-id`),
+    which can then access in `:will-enter` under that keyword
+<4> A target may use the `:will-enter` hook to access route params and to tell Fulcro which ident
+    to route to (here via `dr/route-immediate`)
+<5> `defrouter` creates the router component. It needs at least the list of its targets in `:router-targets`
 
 .Bare essentials of Fulcro routing (2nd half - Root and init)
 ====
@@ -135,26 +139,68 @@ We show either all the people or just a single person. This is the code:
            :append (conj (comp/get-ident AllPeople {}) :all-people))
     [#:person{:id 100 :name "Kamča" :biography "..."}
      #:person{:id 123 :name "Doubravka" :biography "..."}])
-  (dr/change-route! app ["all"]) ; after set-root or mount!    ; <5>
-   ;; or: (dr/change-route! app (dr/path-to AllPeople))
+  (dr/change-route! app ["person" "123"]) ; after set-root or mount! ; <5>
+   ;; or: (dr/change-route! app (dr/path-to Person "123"))           ; <6>
+   ;; or: (dr/change-route! app (dr/path-to Person {:person-id "123"})) ; <6>
   (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
-<1> root q. :ui/router
-<2> initial-state propagation
-<3> dr/change-route! ; also dr/path-to
-<4> dr/initialize!
-<5> init. change-route!
+<1> The router's query is composed into its parent, under an arbitrary name (the `:ui/` ns is practical so that we do not unnecessarily include it in queries sent to the server)
+<2> You _must_ compose the router's initial state into its parent (notice we use the https://book.fulcrologic.com/#_template_mode[template mode of initial state] so the `{}` actually means "include the router's initial state")
+<3> We use `dr/change-route!` with the absolute route (concatenation of all route segments along the way from Root) to display the desired component
+<4> When we start the application, we need to initialize the dynamic routing subsystem with `dr/initialize!`
+<5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!`
+<6> Alternatively, instead of hard-coding the route as a vector of strings, we can use `(path-to & targets-and-params)` with component names to get the route - which is easier to navigate and to refactor. In the map form, there is just a single map with all the route's params at the very end.
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
-WARNING: Always route to a leaf! Always initialize all routers in the UI tree.
+
 
 === Binding the route to the URL
 
 === Loading data on displaying a component (for the first time)
 
 + handling err, "loading..."
+
+=== Nesting routers
+
+// TODO: Ex. of how the path composes, navig. to leaf, init. all
+
+....
+Root
+  PageRoute
+    WelcomePage
+    SportPage, route `["sport" :sport]`
+      Teams
+        TeamRouter
+          TeamStats, route ["team-stats"]
+          Player, route ["player" :player-id]
+....
+
+```clojure
+(dr/change-route! app-or-component ["sport" "hockey" "player" "123"])
+;; We could also leverage path-to:
+(dr/path-to app-or-component SportPage "hockey" Player "123")
+; =>  ["sport" "hockey" "player" "123"]
+(dr/path-to app-or-component SportPage Player {:sport "hockey", :player-id "123"})
+; =>  ["sport" "hockey" "player" "123"]
+```
+
+Under a router target, we can also use relative routing:
+
+```clojure
+;; e.g. inside Teams:
+(dr/change-route-relative! teams-this ["player" "123"])
+```
+
+We can even route from one target to another sibling target:
+
+```clojure
+;; e.g. inside Player:
+(dr/change-route-relative! player-this [:... "team-stats"])
+```
+
+WARNING: Always route to a leaf! Always initialize all routers in the UI tree.
 
 === A brief overview of useful dr/* functions
 
