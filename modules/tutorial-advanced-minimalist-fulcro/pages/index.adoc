@@ -5,8 +5,8 @@
 :description: A follow-up to the Minimalist Fulcro Tutorial that focuses on a few non-essential yet often necessary topics in the traditional minimalist way.
 
 :url-book: https://book.fulcrologic.com/
-:url-eql: https://edn-query-language.org/eql/1.0.0
-:url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
+:url-code-rad: https://github.com/fulcrologic/fulcro-rad/blob/fulcro-rad-1.0.23/src/main/com/fulcrologic/rad/
+:url-code-rad-demo: https://github.com/fulcrologic/fulcro-rad-demo/tree/de4a5402b3526687b6debe41296d9a6f45648c20/
 
 Author: https://holyjak.cz/[Jakub Holý] & contributors
 
@@ -156,7 +156,11 @@ See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/e
 
 === Binding the route to the URL
 
-Reflecting the current route in the URL and changing the URL according to the route is simple.
+Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and create our own routing function that also updated the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with ` ` or v.v. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
+
+The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library (you can choose and pick whatever parts you want) and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. Also remember to {url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization]] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter).
+
+If you do not want to include RAD or like video, have a look at https://youtu.be/oQpmKWBm9HE?t=1275[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). (You might need to go a little back in the video.)
 
 NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. fall backs to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
