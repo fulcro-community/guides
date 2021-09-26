@@ -154,9 +154,11 @@ We show either all the people or just a single person. This is the code:
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
-
-
 === Binding the route to the URL
+
+Reflecting the current route in the URL and changing the URL according to the route is simple.
+
+NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. fall backs to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
 === Loading data on displaying a component (for the first time)
 
@@ -164,7 +166,7 @@ See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/e
 
 === Nesting routers
 
-// TODO: Ex. of how the path composes, navig. to leaf, init. all
+Having a UI tree with multiple levels of nested routers like this:
 
 ....
 Root
@@ -177,6 +179,8 @@ Root
           Player, route ["player" :player-id]
 ....
 
+we can route to a leaf router including the full route:
+
 ```clojure
 (dr/change-route! app-or-component ["sport" "hockey" "player" "123"])
 ;; We could also leverage path-to:
@@ -186,7 +190,7 @@ Root
 ; =>  ["sport" "hockey" "player" "123"]
 ```
 
-Under a router target, we can also use relative routing:
+Somewhere under a router target, we can also use relative routing:
 
 ```clojure
 ;; e.g. inside Teams:
@@ -200,7 +204,34 @@ We can even route from one target to another sibling target:
 (dr/change-route-relative! player-this [:... "team-stats"])
 ```
 
-WARNING: Always route to a leaf! Always initialize all routers in the UI tree.
+IMPORTANT: 
+It is essential that each router in the app is in a routed state before it is displayed. 
+Always route to a leaf target! (Or do so at least once, e.g. during app initialization.)
+(A router will display its first target by default but it is not the same as routing to it manually and some things will not work.) See link:{url-book}#_partial_routes[20.6.1. Partial Routes] for details.
+
+=== A router inside a newly ``load!``ed component
+
+If the parent component of a router did not exist upon application initialization - for example because it has a dynamic ident such as `:ident :person/id` and its data was ``load!``-ed later - then it will not be "linked" properly to the router, i.e. its data in the client DB will miss something like `:<the router prop you made up> [::dr/id :<YourRouterComponentName>]`. (Remember that `:initial-data` only has an effect at the application start and not when you later add new data.) Thus you need to add the "link" manually, using link:{url-book}#_pre_merge[`:pre-merge`]. Pre-merge gets the loaded, denormalized data and returns denormalized data.
+
+```clojure
+;; Somewhere in the app: `(df/load! app [:person/id 123] MyPerson)`
+(defsc MyPerson [_ props]
+  {:ident :person/id
+   :query [:person/id :ui/person-router ...]
+   :initial-state {:ui/person-router {}}                         ; <1>
+   :pre-merge (fn [{:keys [loaded-data-tree current-state-map]}] ; <2>
+                (merge (comp/get-initial-state MyPerson)         ; <3>
+                  {:ui/person-router (get-in current-state-map (comp/get-ident PersonRouter {}))} ; <4>
+                  loaded-data-tree))}
+  (ui-person-router (:ui/person-router props)))
+```
+<1>: The parent of a router must compose its initial state into its own (and so on all the way to the Root)
+<2>: Pre-merge gets the (denormalized) tree of data from `df/load!` and the current value of the client DB (a.k.a. state map)
+<3>: We include the component's initial state, which composes the initial state of the router
+<4>: We make sure to preserve any state the router might already have (which we must denormalize)
+// FIXME: Do I need both <3> and <4> ?! Isn't 4 enough?
+
+Read more in the Fulcro Book, link:{url-book}#_composing_the_routers_state_into_the_parent[20.4. Composing the Router’s State into the Parent].
 
 === A brief overview of useful dr/* functions
 
