@@ -166,7 +166,37 @@ NOTE: To make sure the user can reload the URL from the server, make sure that a
 
 === Loading data on displaying a component (for the first time)
 
-+ handling err, "loading..."
+Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution, if the component is a router target (which often is the case) - namely its `:will-enter`. (A key disadvantage of the former is "cascading loads", when a component A loads it data and renders its child B, triggering its own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
+
+.Loading data when a target is routed to
+====
+```clojure
+(defsc Person [_ props]
+  {:ident :person/id
+   :query [:person/id :person/name]
+   :initial-state {}
+   :route-segment ["person" :person-id]
+   :will-enter (fn [app route-params]    ; <1>                 
+                 (let [ident [:person/id (-> route-params :person-id js/parseInt)]] ; <2>
+                   (dr/route-deferred    ; <3>
+                     ident
+                     #(df/load! app ident Person
+                       {:post-mutation `dr/target-ready
+                        :post-mutation-params {:target ident}})))
+                 (dr/route-immediate
+                   [:person/id
+                    (js/parseInt (:person-id route-params))]))}
+  ...)
+```
+<1> Use `:will-enter`, which is called when it is decided to route to the target
+<2> Construct the ident of the component that will be displayed, leveraging the provided route-params
+    (as defined by the `:route-segment`)
+<3> Return `route-deferred` with the ident and a completion function that will be executed shortly by Fulcro, and which needs to eventually trigger the `dr/target-ready` post-mutation to tell Fulcro that the component is ready. Here the completion function does load the data and uses ``load!``'s `:post-mutation` and `:post-mutation-params` to make sure that `target-ready` is transacted after the load.
+====
+
+==== On router timeouts and errors
+
+// TODO: + handling err, "loading..."
 
 === Nesting routers
 
