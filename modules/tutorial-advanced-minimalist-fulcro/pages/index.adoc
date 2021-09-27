@@ -140,8 +140,9 @@ We show either all the people or just a single person. This is the code:
     [#:person{:id 100 :name "Kamča" :biography "..."}
      #:person{:id 123 :name "Doubravka" :biography "..."}])
   (dr/change-route! app ["person" "123"]) ; after set-root or mount! ; <5>
-   ;; or: (dr/change-route! app (dr/path-to Person "123"))           ; <6>
-   ;; or: (dr/change-route! app (dr/path-to Person {:person-id "123"})) ; <6>
+  ;; Note: 👆🏿 will warn https://book.fulcrologic.com/#warn-uism-sm-not-in-state; ignore!
+  ;; or: (dr/change-route! app (dr/path-to Person "123"))           ; <6>
+  ;; or: (dr/change-route! app (dr/path-to Person {:person-id "123"})) ; <6>
   (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
@@ -178,25 +179,56 @@ Often we only want to load data when it is actually necessary, i.e. when the com
    :route-segment ["person" :person-id]
    :will-enter (fn [app route-params]    ; <1>                 
                  (let [ident [:person/id (-> route-params :person-id js/parseInt)]] ; <2>
-                   (dr/route-deferred    ; <3>
-                     ident
-                     #(df/load! app ident Person
-                       {:post-mutation `dr/target-ready
-                        :post-mutation-params {:target ident}})))
-                 (dr/route-immediate
-                   [:person/id
-                    (js/parseInt (:person-id route-params))]))}
+                   (if (get-in (app/current-state app) ident)) ; <3>
+                     (dr/immediate ident) 
+                     (dr/route-deferred    ; <4>
+                       ident
+                       #(df/load! app ident Person
+                         {:post-mutation `dr/target-ready
+                           :post-mutation-params {:target ident}}))))}
   ...)
 ```
-<1> Use `:will-enter`, which is called when it is decided to route to the target
+<1> Use `:will-enter`, which is called when it is decided to route to the target (and must return `route-immediate` or `route-deferred`)
 <2> Construct the ident of the component that will be displayed, leveraging the provided route-params
     (as defined by the `:route-segment`)
-<3> Return `route-deferred` with the ident and a completion function that will be executed shortly by Fulcro, and which needs to eventually trigger the `dr/target-ready` post-mutation to tell Fulcro that the component is ready. Here the completion function does load the data and uses ``load!``'s `:post-mutation` and `:post-mutation-params` to make sure that `target-ready` is transacted after the load.
+<3> If we have already loaded the data previously then route to it immediately. Otherwise load it first.
+<4> Return `route-deferred` with the ident and a completion function that will be executed shortly by Fulcro, and which needs to eventually trigger the `dr/target-ready` post-mutation to tell Fulcro that the component is ready. Here the completion function does load the data and uses ``load!``'s `:post-mutation` and `:post-mutation-params` to make sure that `target-ready` is transacted after the load.
 ====
+
+This is also called link:{url-book}#_deferred_routing[deferred routing and you can read more] about it in the Fulcro book.
 
 ==== On router timeouts and errors
 
-// TODO: + handling err, "loading..."
+What happens when loading data in a deferred route takes too long? What if it fails? The router has you covered:
+
+.Router with timeouts, loading indicator, and an error message
+====
+```clojure
+(dr/defrouter MyRouter [_ {:keys [current-state route-factory route-props]}]
+  {:router-targets [AllPeople Person]}
+  ;; The body of the router is displayed only when the target is not ready,
+  ;; i.e. in one of the states below (unless you set `:always-render-body?`)
+  (case current-state ; <1>
+    nil (println "MISTAKE: MyRouter is displayed but has never been routed to yet") ; <2>
+    :pending (dom/div "Loading...") ; <3>
+    :failed (dom/div "Failed!")     ; <4>
+    (println "Should never come here:" current-state))) ; <5>
+```
+<1> The body of the router is only displayed when the target is not ready (unless you set `:always-render-body? true`). Thus the only router states we will ever see here are those listed below.
+<2> `current-state = nil` is the initial state, before the router has been routed to - i.e. when you failed to initialize it properly via `change-route!`, as described above (there is always the `:inital` state but I have not seen it in practice)
+<3> `:pending` for a deferred route, after the `:deferred-timeout` passed but before the `:error-timeout`
+<4> `:failed` if the deferred route has not become ready within the `:error-timeout` since the route event
+<5> We should see no other states, namely `:routed`, unless we set `:always-render-body? true`
+====
+
+To summarize:
+
+* There are two timeouts that control the router's behavior with respect to deferred routes, `:deferred-timeout` (default 100ms)
+  and `:error-timeout` (default 5s). You can override the default values when calling `d/change-route!`, see its docstring.
+* You can use the body of the router and its `current-state`. It is only displayed when the target is not "ready" to be displayed
+* The router only switches from the current target to the pending one - displaying its body while it is not ready - after the `:deferred-timeout` has passed.
+* If the mutation `(dr/target-ready {:target ident}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (it can still become "ready" later, if the load eventually finishes, and the target will be displayed)
+* Thus we can use `:pending` to display a loading indicator, if it takes longer than the `:deferred-timeout`, and `:failed` to show an error message telling the user it is either taking too long or failed
 
 === Nesting routers
 
