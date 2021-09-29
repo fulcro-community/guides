@@ -45,6 +45,8 @@ Imagine you have a large data entity with many attributes. Displaying it in a si
 Accessing top-level data from a nested component::
 Sometimes you have a piece of data that you need at multiple place in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `[... [:current-user '_] ...]`, which is an ident with the magical value `_` meaning "all of it". 
 In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer.
+Sharing data between diverse components on the page::
+If you have a piece of data that multiple components, at different parts of the UI tree, need to access then the simplest solution is to put the data or a reference to the data into the root of the client DB and to use Link Query to access it from those components.
 Inserting a stateful UI component between a parent-child entities::
 This essentially explains why inserting a router component into your UI does not break the query.
 
