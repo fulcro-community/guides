@@ -12,27 +12,27 @@ Author: https://holyjak.cz/[Jakub Holý] & contributors
 
 A follow-up to the Minimalist Fulcro Tutorial that focuses on a few non-essential yet often necessary topics in the traditional minimalist way.
 
-WARNING: This is work in progress, at a very early stage. Come back in a few weeks or months.
+WARNING: This is work in progress at an early stage. You can https://github.com/fulcro-community/guides/issues/8[subscribe to this issue] to get notified of significant updates.
 
 toc::[]
 
 == Troubleshooting Fulcro
 
-It is essential for your productivity that you get good at troubleshooting Fulcro, i.e. detecting why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect - especially the DB view, Transactions, and Network - at maximum. I claim that:
+It is essential for your productivity that you get good at troubleshooting Fulcro, so that you can detect why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect - especially the DB view, Transactions, and Network - at maximum. I'd claim that:
 
-> In Fulcro, UI is a true function of data and in 90% cases you only need to look at the data and their connections - and perhaps transactions - to understand what is wrong. In 90% of these cases that beginner encounter, the problem is a broken connection between data. (Not including `get-query` in the parent's query, not setting/propagating up initial state where it is necessary.)
+> In Fulcro, the UI is a true function of data and in 90% cases you only need to look at the data and their connections - and perhaps transactions - to understand what is wrong. In 90% of these cases that beginners encounter, the problem is a broken connection between data. (Not including `get-query` in the parent's query, not setting/propagating up initial state where it is necessary.)
 
 Hopefully you have got somewhat proficient with Fulcro Inspect when doing the https://github.com/fulcro-community/fulcro-exercises[Fulcro exercises]. Remember to play with it and dig around to really understand your application while it is working and as you are changing it so your skills will be sharp when you need them. The https://www.youtube.com/playlist?list=PLYvJiiE4TAijBAvO-R0PO8plSto4wtoQu[Learning Fulcro - troubleshooting demos] - a series of short screencasts demonstrating how to troubleshoot various problems in a Fulcro app - can help you.
 
-Finally, remember to consult the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps. I would also highly recommend that you use https://github.com/holyjak/fulcro-troubleshooting[fulcro-troubleshooting] to get notified early and visibly about possible problems and to watch out for Fulcro warnings in the browser Console.
+Finally, remember to consult the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps. I would also highly recommend that you use my https://github.com/holyjak/fulcro-troubleshooting[fulcro-troubleshooting] to get notified early and visibly about possible problems and to watch out for Fulcro warnings in the browser Console.
 
 TIP: Remember that only rarely you should be clicking around your UI and observing its changes. In Fulcro, you can trigger essentially any action (`transact!`, ...) from the REPL, you can use functions to simulate turning a query into the props tree, etc. Use these tools instead - they are more more effective and allow you to zoom in on the problem much more precisely.
 
 == What to do when UI Components and Data Entities do not match 1:1
 
-In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy (no data entity)? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after you click the summary? (Both display different views of the same data entity.)
+In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy (no data entity)? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after the summary is clicked? (Both display different views of the same data entity.)
 
-The article https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] so I only provide a brief summary here.
+The article https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] explains this well, and you should go and read it now. A brief summary follows:
 
 A UI-only ("stateless") component, such as the CoolAnimationThingy, with no query of its own:: 
 Solution: The nearest stateful (with a query) ancestor component (Team in our example) becomes the true parent of any stateful children of the stateless component, composes their query and initial state, creates them and passes them to the stateless component as its children.
@@ -40,10 +40,10 @@ A Data-only component (a.k.a. a query component)::
 This is mostly only necessary when describing to Fulcro the data returned by a mutation, if it does not match an existing component. Solution (since Fulcro 3.5): use `rc/nc`; ex.: `(com.fulcrologic.fulcro.raw.components/nc [:user/id :user/email])`.
 Multiple UI views of a single Data Entity::
 This the case of the PlayerSummary and PlayerDetails and it is simple: they both use the same `:ident` (here, `:player/id`) and query for whatever they need.
-A Data Entity spread across multiple (sibling) components::
-Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI in multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" (from the data view) children, include their query in the actual entity component as usual but under a made-up key starting with `:>/` (the habitual Pathom "placeholder" ns).
+A Data Entity spread across multiple sibling components::
+Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI into multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" (from the data view) children, include their query in the actual entity component as usual but under a made-up join key starting with `:>/` (the habitual https://blog.wsscode.com/pathom/v2/pathom/2.2.0/core/placeholders.html[Pathom "placeholder"] ns). The query `[.. {:>/dummy [:person/id :person/name]} ..]` is effectively the same as ``[.. :person/id :person/name ..]`.
 Accessing top-level data from a nested component::
-Sometimes you have a piece of data that you need at multiple place in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `[... [:current-user '_] ...]`, which is an ident with the magical value `_` meaning "all of it". 
+Sometimes you have a piece of data that you need at multiple places in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `+[... [:current-user '_] ...]+`, which is an ident with the magical value `_` meaning "all of it". 
 In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer.
 Sharing data between diverse components on the page::
 If you have a piece of data that multiple components, at different parts of the UI tree, need to access then the simplest solution is to put the data or a reference to the data into the root of the client DB and to use Link Query to access it from those components.
@@ -69,7 +69,7 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 To add routing to your application, you need to:
 
-1. Create a router with `dr/defrouter` (which just produces a `defsc`) and with the list of the target components, of which it should display one
+1. Create a router with `dr/defrouter` (which just produces a `defsc`) and with the list of the target components, of which it will display one
 2. Give each target component a unique _route segment_ - think of it as a URL - so that you can route to this target. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers.
 .. The component can use the `:will-enter` hook to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
 3. Initialize everything and route to the target you want displayed via `dr/change-route`
@@ -89,7 +89,7 @@ We show either all the people or just a single person. This is the code:
 ```clojure
 (defsc AllPeople [_ {:keys [all-people]}]
   {:ident (fn [] [:component/id ::AllPeople])
-   :query [{:all-people [:person/id :person/name]}]
+   :query [{:all-people [:person/id :person/name]}]  ; <1>
    :initial-state {}                                 ; <1>
    :route-segment ["all"]}                           ; <2>
    (dom/div
@@ -100,7 +100,7 @@ We show either all the people or just a single person. This is the code:
 
 (defsc Person [_ {:person/keys [id name biography]}]
   {:ident :person/id
-   :query [:person/id :person/name :person/biography]
+   :query [:person/id :person/name :person/biography]  ; <1>
    :initial-state {}                                   ; <1>
    :route-segment ["person" :person-id]                ; <3>
    :will-enter (fn [app route-params]                  ; <4>
@@ -112,10 +112,10 @@ We show either all the people or just a single person. This is the code:
 (dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ; <5>
 ```
 ====
-<1> A router target _must always_ have a non-nil initial state (so at least an empty `{}`)
+<1> A router target _must always_ have a query (use `['*]` if it doesn't need any) and a non-nil initial state (so at least an empty `{}`)
 <2> A target's `:route-segment` assigns it a routing path (relative to an ancestor target, if any)
 <3> The `:route-segment` may also contain placeholders to capture parameters from the route (here `:person-id`),
-    which can then access in `:will-enter` under that keyword
+    which can then be accessed in `:will-enter` under that keyword
 <4> A target may use the `:will-enter` hook to access route params and to tell Fulcro which ident
     to route to (here via `dr/route-immediate`)
 <5> `defrouter` creates the router component. It needs at least the list of its targets in `:router-targets`
@@ -148,7 +148,7 @@ We show either all the people or just a single person. This is the code:
   (app/mount! app Root "app" {:initialize-state? false}))
 ```
 ====
-<1> The router's query is composed into its parent, under an arbitrary name (the `:ui/` ns is practical so that we do not unnecessarily include it in queries sent to the server)
+<1> You _must_ compose the router's query into its parent, under an arbitrary name (the `:ui/` ns is practical so that we do not unnecessarily include it in queries sent to the server)
 <2> You _must_ compose the router's initial state into its parent (notice we use the https://book.fulcrologic.com/#_template_mode[template mode of initial state] so the `{}` actually means "include the router's initial state")
 <3> We use `dr/change-route!` with the absolute route (concatenation of all route segments along the way from Root) to display the desired component
 <4> When we start the application, we need to initialize the dynamic routing subsystem with `dr/initialize!`
