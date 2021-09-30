@@ -62,6 +62,10 @@ Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom i
 
 All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[registered with a Pathom "parser"] and thus available to be used to fulfill queries. All resolvers can also take {url-pathom-resolvers}#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that it exists.)
 
+[qanda]
+When to return a data map directly and when to put it inside a `{:my-prop ...}`?::
+If you are returning a single data entity (e.g. a person) then you return it directly. But if you are returning a _list_ of entities - or a scalar value - then you need to wrap it inside a map (because resolvers can only return maps), as we see with `:all-people` above.
+
 ## A word of warning
 
 Fulcro is likely very different from any other web framework you have worked with before, even though there are intersections with various technologies (React, GraphQL). According to our experience, it is most advisable that you familiarize yourself well with its key concepts, presented below. Jumping into "learning by doing" straight away does not tend to work all that well, even if it otherwise is your preferred mode of learning. But don't worry, we will try to get you https://github.com/fulcro-community/fulcro-exercises[coding as soon as possible].
