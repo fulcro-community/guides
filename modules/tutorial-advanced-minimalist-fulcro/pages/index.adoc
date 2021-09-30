@@ -7,6 +7,7 @@
 :url-book: https://book.fulcrologic.com/
 :url-code-rad: https://github.com/fulcrologic/fulcro-rad/blob/fulcro-rad-1.0.23/src/main/com/fulcrologic/rad/
 :url-code-rad-demo: https://github.com/fulcrologic/fulcro-rad-demo/tree/de4a5402b3526687b6debe41296d9a6f45648c20/
+:url-cljdoc-fulcro: https://cljdoc.org/d/com.fulcrologic/fulcro/3.5.6/api/
 
 Author: https://holyjak.cz/[Jakub Holý] & contributors
 
@@ -63,7 +64,7 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
 6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
 7. Only query for the props of its current target from the client DB, which is important for the performance of bigger apps
-8. TODO: Timeouts, errors, ...
+8. Display a loading indicator after a short delay and to mark the route as failed if it does not complete within a time limit
 
 === The bare essentials of Fulcro routing
 
@@ -120,6 +121,8 @@ We show either all the people or just a single person. This is the code:
     to route to (here via `dr/route-immediate`)
 <5> `defrouter` creates the router component. It needs at least the list of its targets in `:router-targets`
 
+WARNING: will-enter can be called multiple times as part of the route resolution algorithm and MUST NOT side-effect. 
+
 .Bare essentials of Fulcro routing (2nd half - Root and init)
 ====
 ```clojure
@@ -153,23 +156,25 @@ We show either all the people or just a single person. This is the code:
 <3> We use `dr/change-route!` with the absolute route (concatenation of all route segments along the way from Root) to display the desired component
 <4> When we start the application, we need to initialize the dynamic routing subsystem with `dr/initialize!`
 <5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!`
+    * Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router. Ignore it.
+    * link:{url-book}#_setting_the_route_early[The Fulcro book advises]: "`An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine.`" - see the example code below the quote
 <6> Alternatively, instead of hard-coding the route as a vector of strings, we can use `(path-to & targets-and-params)` with component names to get the route - which is easier to navigate and to refactor. In the map form, there is just a single map with all the route's params at the very end.
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
 === Binding the route to the URL
 
-Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and create our own routing function that also updated the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with ` ` or v.v. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
+Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and to create our own routing function that also updated the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with spaces or v.v. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
 
-The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library (you can choose and pick whatever parts you want) and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. Also remember to {url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization]] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter).
+The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library (you can choose and pick whatever parts you want) and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. Also remember to link:{url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter).
 
 If you do not want to include RAD or like video, have a look at https://youtu.be/oQpmKWBm9HE?t=1275[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). (You might need to go a little back in the video.)
 
 NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. fall backs to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
-=== Loading data on displaying a component (for the first time)
+=== Loading data when a component is routed to (for the first time)
 
-Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution, if the component is a router target (which often is the case) - namely its `:will-enter`. (A key disadvantage of the former is "cascading loads", when a component A loads it data and renders its child B, triggering its own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
+Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target (which often is the case) - namely its `:will-enter`. (A key disadvantage of the former is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
 
 .Loading data when a target is routed to
 ====
@@ -217,16 +222,16 @@ What happens when loading data in a deferred route takes too long? What if it fa
     (println "Should never come here:" current-state))) ; <5>
 ```
 <1> The body of the router is only displayed when the target is not ready (unless you set `:always-render-body? true`). Thus the only router states we will ever see here are those listed below.
-<2> `current-state = nil` is the initial state, before the router has been routed to - i.e. when you failed to initialize it properly via `change-route!`, as described above (there is always the `:inital` state but I have not seen it in practice)
+<2> `current-state = nil` is the initial state, before the router has been routed to - i.e. when you failed to initialize it properly via `change-route!`, as described above (there is also the `:inital` state but I have not seen it in practice)
 <3> `:pending` for a deferred route, after the `:deferred-timeout` passed but before the `:error-timeout`
-<4> `:failed` if the deferred route has not become ready within the `:error-timeout` since the route event
+<4> `:failed` if the deferred route has not become ready (as indicated by `dr/target-ready`) within the `:error-timeout` since the route event
 <5> We should see no other states, namely `:routed`, unless we set `:always-render-body? true`
 ====
 
-To summarize:
+Key points to know:
 
 * There are two timeouts that control the router's behavior with respect to deferred routes, `:deferred-timeout` (default 100ms)
-  and `:error-timeout` (default 5s). You can override the default values when calling `d/change-route!`, see its docstring.
+  and `:error-timeout` (default 5s). You can override the default values when calling `d/change-route!`, link:{url-cljdoc-fulcro}com.fulcrologic.fulcro.routing.dynamic-routing#change-route![see its docstring].
 * You can use the body of the router and its `current-state`. It is only displayed when the target is not "ready" to be displayed
 * The router only switches from the current target to the pending one - displaying its body while it is not ready - after the `:deferred-timeout` has passed.
 * If the mutation `(dr/target-ready {:target ident}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (it can still become "ready" later, if the load eventually finishes, and the target will be displayed)
@@ -242,9 +247,10 @@ Root
     WelcomePage
     SportPage, route `["sport" :sport]`
       Teams
-        TeamRouter
-          TeamStats, route ["team-stats"]
-          Player, route ["player" :player-id]
+        Team
+          TeamRouter
+            TeamStats, route ["team-stats"]
+            Player, route ["player" :player-id]
 ....
 
 we can route to a leaf router including the full route:
@@ -268,18 +274,18 @@ Somewhere under a router target, we can also use relative routing:
 We can even route from one target to another sibling target:
 
 ```clojure
-;; e.g. inside Player:
+;; Inside Player:
 (dr/change-route-relative! player-this [:... "team-stats"])
 ```
 
 IMPORTANT: 
 It is essential that each router in the app is in a routed state before it is displayed. 
 Always route to a leaf target! (Or do so at least once, e.g. during app initialization.)
-(A router will display its first target by default but it is not the same as routing to it manually and some things will not work.) See link:{url-book}#_partial_routes[20.6.1. Partial Routes] for details.
+(A router will display its first target by default but it is not the same as routing to it manually and some things _will not work_.) See link:{url-book}#_partial_routes[20.6.1. Partial Routes] for details.
 
 === A router inside a newly ``load!``ed component
 
-If the parent component of a router did not exist upon application initialization - for example because it has a dynamic ident such as `:ident :person/id` and its data was ``load!``-ed later - then it will not be "linked" properly to the router, i.e. its data in the client DB will miss something like `:<the router prop you made up> [::dr/id :<YourRouterComponentName>]`. (Remember that `:initial-data` only has an effect at the application start and not when you later add new data.) Thus you need to add the "link" manually, using link:{url-book}#_pre_merge[`:pre-merge`]. Pre-merge gets the loaded, denormalized data and returns denormalized data.
+If the parent component of a router did not exist upon application initialization - for example because it has a dynamic ident such as `:ident :person/id` and its data was ``load!``-ed later - then it will not be "linked" properly to the router, i.e. its data in the client DB will miss something like `:<the router prop you made up> [::dr/id :<YourRouterComponentName>]`. (Remember that `:initial-data` only has an effect at the application start and not when you add new data later.) Thus you need to add the "link" manually, using link:{url-book}#_pre_merge[`:pre-merge`] (a component hook called by Fulcro before normalizing and merging incoming data). Pre-merge gets the loaded, denormalized data and returns denormalized data.
 
 ```clojure
 ;; Somewhere in the app: `(df/load! app [:person/id 123] MyPerson)`
@@ -293,34 +299,25 @@ If the parent component of a router did not exist upon application initializatio
                   loaded-data-tree))}
   (ui-person-router (:ui/person-router props)))
 ```
-<1>: The parent of a router must compose its initial state into its own (and so on all the way to the Root)
-<2>: Pre-merge gets the (denormalized) tree of data from `df/load!` and the current value of the client DB (a.k.a. state map)
-<3>: We include the component's initial state, which composes the initial state of the router
-<4>: We make sure to preserve any state the router might already have (which we must denormalize)
-// FIXME: Do I need both <3> and <4> ?! Isn't 4 enough?
+<1> The parent of a router must compose its initial state into its own (and so on all the way up to the Root)
+<2> Pre-merge gets the (denormalized) tree of data from `df/load!` and the current value of the client DB (a.k.a. state map)
+<3> We include the component's initial state, which composes the initial state of the router
+<4> We make sure to preserve any state the router might already have (which we must denormalize)
+// FIXME: Do I need both <3> and <4> ?! Isn't 4 enough? Also, at 4 we do not really denorm. the content of the router data?!
 
 Read more in the Fulcro Book, link:{url-book}#_composing_the_routers_state_into_the_parent[20.4. Composing the Router’s State into the Parent].
 
-=== A brief overview of useful dr/* functions
 
-=== TODO
+=== Routing-related component hooks
 
-.TODO
-----
-Ideas:
+We have already seen `:will-enter` but link:{url-book}#_routing_targets[there are also other optional component hooks] you might want to know about: `:route-cancelled`, `:will-leave`, `:allow-route-change?`, `:route-denied`.
 
-* How does it work?
-** Set `::dr/current-route` to the selected target's query, pass
-   `(::dr/current-route props)` to the target comp. as its props
-   (+ pass through any computed props)
-** https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/#_inserting_a_stateful_ui_component_between_a_parent_child_entities[When UI and Entities Diverge: Inserting a stateful UI component between a parent-child entities]
-* Use cases: top router a la RAD x ... ?
+.Deep dive: how do routers work?
+****
+Routers use _dynamic queries_ (discussed later on) to set the sub-query of their `::dr/current-route` to be the active target's one. When they render the target component, they pass it `(::dr/current-route props)`, together with any computed props.
 
-> An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine. 
-> -- the Book, https://book.fulcrologic.com/#_setting_the_route_early
-
-IMPORTANT: Singletons. 1+ targets (1 <> dynamic segment).
-----
+You can learn more about it in https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/#_inserting_a_stateful_ui_component_between_a_parent_child_entities[When UI and Entities Diverge: Inserting a stateful UI component between a parent-child entities].
+****
 
 == Creating and editing data entities
 
