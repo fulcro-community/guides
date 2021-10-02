@@ -50,7 +50,7 @@ Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom i
     {:all-people [{:person/id 1 :person/name "Diane"}, {:person/id 2 :person/name "BoJack"}]})
 
 ;; An *ident resolver* needs and ID as its input
-(pc/defresolver person-by-id [env {:keys [person/id]}]
+(pc/defresolver person-by-id [env {:person/keys [id]}]
     {::pc/input  #{:person/id}
      ::pc/output [:person/id :person/name]}
     (case id
@@ -60,7 +60,7 @@ Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom i
       (fetch-person-from-db env id)))
 ```
 
-All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[registered with a Pathom "parser"] and thus available to be used to fulfill queries. All resolvers can also take {url-pathom-resolvers}#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that it exists.)
+All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[registered with a Pathom "parser"] and thus available to be used to fulfill queries. All resolvers can also take {url-pathom-resolvers}#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that they exists, for now.)
 
 [qanda]
 When to return a data map directly and when to put it inside a `{:my-prop ...}`?::
@@ -80,11 +80,13 @@ This led to the following decisions:
 * Components declare their data needs ("query") - because nobody else knows or should care about what data the component needs. And these queries are composable so that we can fetch the data needed by the whole UI (sub)tree at once.
 * Graph API: The UI is a a tree (i.e. a graph) of components and therefore the composed query is also a tree. The server can understand and fulfill such a graph query with a tree of data - exactly the data the UI needs. Not the mess of N separate REST endpoints that you need to query individually and combine and prune the data on the frontend. (Reportedly, a perfectly designed REST APIs do not suffer from this problem. But they are rarer than unicorns.)
 * Web applications are inherently full-stack and thus a framework should provide an integrated solution for fetching data from the server - including the ability to track its status - and for triggering actions ("mutations") with potentially both local and remote constituents. We should not pretend that this is not our problem, as many frameworks do.
-* Normalized client-side DB: Even though the UI needs a tree of data and the server returns just that, we want the data cached in a https://en.wikipedia.org/wiki/Database_normalization[normalized] cache - which we call client DB - on the frontend. For decades, this has been the established best practice for data access in databases, and for good reasons. In particular, it prevents a whole class of issues with out-of-sync data. When we mutate a particular piece of data, we want the new value reflected everywhere where it is used, without having to manually go through all those places. And such a normalized database also makes it trivial to find just the piece of data you want to change (all you need is the entity's name, its ID value, and the property name).
+* Normalized client-side DB: Even though the UI needs a tree of data and the server returns just that, we want the data cached in a https://en.wikipedia.org/wiki/Database_normalization[normalized] cache - which we call client DB - on the frontend. For decades, data normalization has been the established best practice for data access in databases, and for good reasons. In particular, it prevents a whole class of issues with out-of-sync data. When we mutate a particular piece of data, we want the new value reflected everywhere where it is used, without having to manually go through all those places. And such a normalized database also makes it trivial to find just the piece of data you want to change (all you need is the entity's name, its ID value, and the property name).
 
 Fulcro is also quite well designed. It is based on a small set of orthogonal building blocks and it doesn't hide anything from you - you can always go a level deeper into its internals to achieve what you need (as long as you are aligned with its overall philosophy). Its flexibility and customizability is surprising - all of the critical features from network interaction to rendering optimization are easily customizable. It is also very careful about providing only the tools that are generally applicable and avoiding "features" that might help some people but stand in the way of others. But thanks to the aforementioned flexibility, you can implement what you need for your unique use case yourself.
 
+****
 To learn more about the reasoning behind Fulcro, listen to the ClojureScript Podcast https://podcasts.apple.com/us/podcast/s4-e6-fulcro-with-tony-kay-part-1/id1461500416?i=1000479361034[S4 E6 Fulcro with Tony Kay (Part 1)] (2020), which explores the origins of and key motivation for Fulcro, and read the {url-book}#_getting_started[Ch. 4. Getting Started] of the Fulcro Developers Guide, which demonstrates how various problems are made easier thanks to the way Fulcro is. To learn to use Fulcro, read on :-).
+****
 
 ## An overview of Fulcro
 
@@ -130,7 +132,8 @@ A part of your *frontend* data model with an identity of its own and a set of pr
 EQL (EDN Query Language) server::
 The backend includes an EQL server - namely Pathom - that can process EQL queries and mutations and respond with data (nested, tree-shaped).
 Ident::
-_Of a data entity_: the identifier of a data entity composed of the ID property name and value. Ex.: `[:person/id 123]`. _Of a component_: a function that returns an ident (discussed later).
+_Of a data entity_: the identifier of a data entity composed of the ID property name and value. Ex.: `[:person/id 123]`. +
+_Of a component_: a function that returns an ident (discussed later).
 Mutation (Fulcro)::
 When components want to "change" something - update data, upload a file - they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. In the context of Fulcro, a request to load data from the backend is also a mutation (while to Pathom it is sent as a plain EQL query). Remote mutations are sent as {url-eql}/specification.html#_mutations[EQL mutations].
 Normalization of data::
@@ -159,7 +162,7 @@ The core of the Fulcro lifecycle is simple:
 ... Use the query to _normalize_ the data into the client DB
 . Fulcro asks the Root component for its query (which _includes the queries of its children_ and thus describes all the data the whole page needs)
 . Fulcro uses the query and the client DB to construct the props data tree for the Root component
-. The props are passed to the Root component (which passes the relevant parts on to its children) and it is rendered
+. The props are passed to the Root component, which passes the relevant parts on to its children, and it is rendered
 
 ## Zooming in on components and mutations
 
@@ -179,7 +182,7 @@ Fulcro components, which are also React components, are the heart of a Fulcro ap
 .A Fulcro component
 ====
 ```clojure
-;; Assume `defsc Address` and its factory `ui-address` exist:
+;; Assume `defsc Address` and its factory function `ui-address` exist:
 (defsc Person 
   [this {:person/keys [fname email address] :as props}] ; <1>
   {:query [:person/id :person/fname :person/email       ; <2>
@@ -195,11 +198,11 @@ Fulcro components, which are also React components, are the heart of a Fulcro ap
 
 _(Assuming the {url-book}#_common_prefixes_and_namespaces[same `:require` aliases as described in the Fulcro Development Guide].)_
 
-`(defsc Person ...)` ("define stateful component") defines a new React class-based component. After the declaration of arguments ((1), `this` and `props`) comes a map with meta data of the component (here `:query` (2) and `:ident` (3), the two most common). Finally comes the body (4) (which will become the `render` method of the React component) that actually produces React DOM elements. You could read it like this:
+`(defsc Person ...)` ("define stateful component") defines a new React class-based component. After the declaration of arguments ((1), `this` and `props`) comes a map of the component's options (here `:query` (2) and `:ident` (3), the two most common). Finally comes the body (4) (which will become the `render` method of the React component) that actually produces React DOM elements. You could read it like this:
 
 ```clojure
 (defsc <Name> [<arguments>]
-  {<meta data>}
+  {<options>}
   <body to be rendered>)
 ```
 
@@ -266,7 +269,7 @@ You can read more in the https://clojure.org/guides/destructuring#_associative_d
    ..} ..)
 ```
 
-*The query declares what props the component needs, _including_ the needs of its child components.* (We saw how `Person` includes the query of `Address` via `comp/get-query`.)
+*The query declares what props the component needs, _including_ the needs of its child components.* (We see here how `Person` includes the query of `Address` via `comp/get-query`.)
 
 Thus the root component's query will describe the UI needs of the whole UI tree. The query is in EQL, which you are already familiar with, containing the _properties_ the component itself needs and _joins_ for the nested data needed by child components.
 
@@ -282,6 +285,13 @@ Beware: You must not copy and paste the child's query into the parent's but rath
 Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`.
 
 TIP: Don't be mislead, the query is not a standalone query that could be "run" directly against the database (as you know from SQL or re-frame subscriptions). It is rather a _query fragment_, which only makes sense in the context of its parent's query. Only the root component's properties are resolved directly against the client database. A query such as `[:person/id :person/fname]` is meaningless on its own - which person? Only in the context of a parent, such as `[{:all-people [<insert here>]}]` (in an imaginary `AllPeopleList` component) does it make sense.
+
+.Fulcro query syntax summary
+****
+A query is a vector listing the properties of the data entity you want. If the property value is another data entity, you specify its props using a _join_: `+{:the/prop [:nested/prop1]}+`. Aside of querying for props on the current data entity, you can also query for any data entity using its ident, so a query may include something like `+[:person/id 123]+`. This can again be wrapped in a join to only request specific properties.
+
+There are two special symbols you can use in a query: `+'*+` instead of a property means "give me all the properties". And `+'_+` used as the id value in an ident means "give me the property at the root of the client DB" and it is used in {url-book}#_link_queries[Link Queries]. (`+'_+` is a Fulcro-only thing, not an EQL thing, while `+'*+` will also be understood by Pathom.)
+****
 
 #### Component's `:ident`
 
