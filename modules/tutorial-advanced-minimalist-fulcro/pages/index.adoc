@@ -17,50 +17,58 @@ WARNING: This is work in progress at an early stage. You can https://github.com/
 
 toc::[]
 
+== Tips for learning Fulcro
+
+Read the docstrings of Fulcro's functions and vars. They are typically very good and insightful.
+
+Don't be afraid to read the code of Fulcro itself. Even if you won't understand everything, you will gleam valuable insights. It is OK to only skim over and focus on the parts you can understand. Have a look at `defsc` and `defrouter` and the underlying functions, `transact!` and `load!` etc. You will be better for it.
+
 == Troubleshooting Fulcro
 
-It is essential for your productivity that you get good at troubleshooting Fulcro, so that you can detect why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect - especially the DB view, Transactions, and Network - at maximum. I'd claim that:
+It is essential for your productivity that you get good at troubleshooting Fulcro, so that you can detect why something does not work as expected. A key part of that is understanding Fulcro enough to know where to "zoom in" and leveraging Fulcro Inspect as much as possible - especially DB, DB Explorer, Transactions, and Network. I'd claim that:
 
-> In Fulcro, the UI is a true function of data and in 90% cases you only need to look at the data and their connections - and perhaps transactions - to understand what is wrong. In 90% of these cases that beginners encounter, the problem is a broken connection between data. (Not including `get-query` in the parent's query, not setting/propagating up initial state where it is necessary.)
+> In Fulcro, the UI is a true function of data and in 90% cases you only need to look at the data and their connections - and perhaps transactions - to understand what is wrong. In 90% of these cases that beginners encounter, the problem is a broken connection between data^1^. 
+>
+> ^1^) Examples of breaking connections: Not including `get-query` in the parent's query, not setting/propagating up initial state where it is necessary.
 
-Hopefully you have got somewhat proficient with Fulcro Inspect when doing the https://github.com/fulcro-community/fulcro-exercises[Fulcro exercises]. Remember to play with it and dig around to really understand your application while it is working and as you are changing it so your skills will be sharp when you need them. The https://www.youtube.com/playlist?list=PLYvJiiE4TAijBAvO-R0PO8plSto4wtoQu[Learning Fulcro - troubleshooting demos] - a series of short screencasts demonstrating how to troubleshoot various problems in a Fulcro app - can help you.
+Hopefully you have got somewhat proficient with Fulcro Inspect when doing the https://github.com/fulcro-community/fulcro-exercises[Fulcro exercises]. Remember to play with Fulcro Inspect and dig around your application with it to really understand the app while it is working well and as you are changing it so your skills will be sharp when you need them. The https://www.youtube.com/playlist?list=PLYvJiiE4TAijBAvO-R0PO8plSto4wtoQu[Learning Fulcro - troubleshooting demos] - a series of short screencasts demonstrating how to troubleshoot various problems in a Fulcro app - can help you.
 
-Finally, remember to consult the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps. I would also highly recommend that you use my https://github.com/holyjak/fulcro-troubleshooting[fulcro-troubleshooting] to get notified early and visibly about possible problems and to watch out for Fulcro warnings in the browser Console.
+Finally, remember to consult the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree], which guides you to get from a problem to the most appropriate troubleshooting steps. I would also highly recommend that you use my library https://github.com/holyjak/fulcro-troubleshooting[fulcro-troubleshooting] to receive feedback about possible Fulcro problems early and visibly. Also watch out for Fulcro warnings in the browser Console.
 
-TIP: Remember that only rarely you should be clicking around your UI and observing its changes. In Fulcro, you can trigger essentially any action (`transact!`, ...) from the REPL, you can use functions to simulate turning a query into the props tree, etc. Use these tools instead - they are more more effective and allow you to zoom in on the problem much more precisely.
+TIP: Remember that only rarely should you be clicking around your UI and observing its changes. In Fulcro, virtually all user actions can be triggered from the REPL using `transact!`. It is also possible to observe and manipulate app data directly with the same functions that Fulcro uses - for example to simulate turning a query into the props tree via `db->tree`. It is also easier to observe effects on the data in the client DB than in the UI itself. Use these tools instead of the UI - they are more more efficient and allow you to zoom in on the problem much more precisely.
 
 == What to do when UI Components and Data Entities do not match 1:1
 
-In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy (no data entity)? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after the summary is clicked? (Both display different views of the same data entity.)
+In the simplest case, each UI Component such as Player and Team corresponds to a data entity (player and team, respectively). But often that is not the case. What if I want to wrap Player in a CoolAnimationThingy, which has no data entity? What if I want to show only a PlayerSummary inside the Team and only display PlayerDetails in a popup after the summary is clicked? Here both the components display different views of the same data entity.
 
 The article https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] explains this well, and you should go and read it now. A brief summary follows:
 
 A UI-only ("stateless") component, such as the CoolAnimationThingy, with no query of its own:: 
 Solution: The nearest stateful (with a query) ancestor component (Team in our example) becomes the true parent of any stateful children of the stateless component, composes their query and initial state, creates them and passes them to the stateless component as its children.
 A Data-only component (a.k.a. a query component)::
-This is mostly only necessary when describing to Fulcro the data returned by a mutation, if it does not match an existing component. Solution (since Fulcro 3.5): use `rc/nc`; ex.: `(com.fulcrologic.fulcro.raw.components/nc [:user/id :user/email])`.
+This is mostly only necessary when describing to Fulcro the data returned by a mutation, if it does not match an existing component. Solution (since Fulcro 3.5): link:{url-cljdoc-fulcro}com.fulcrologic.fulcro.raw.components#nc[use `rc/nc`]; ex.: `(com.fulcrologic.fulcro.raw.components/nc [:user/id :user/email])`.
 Multiple UI views of a single Data Entity::
 This the case of the PlayerSummary and PlayerDetails and it is simple: they both use the same `:ident` (here, `:player/id`) and query for whatever they need.
 A Data Entity spread across multiple sibling components::
-Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI into multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" (from the data view) children, include their query in the actual entity component as usual but under a made-up join key starting with `:>/` (the habitual https://blog.wsscode.com/pathom/v2/pathom/2.2.0/core/placeholders.html[Pathom "placeholder"] ns). The query `[.. {:>/dummy [:person/id :person/name]} ..]` is effectively the same as ``[.. :person/id :person/name ..]`.
+Imagine you have a large data entity with many attributes. Displaying it in a single component would make it huge and hard to understand so you want to split the UI into multiple components, each displaying only a part of the entity. It differs from the "multiple views" by that they are all children of the <Entity> component and you want to load all the data at once. The solution is actually in Pathom: for each of these "virtual" children, include their query in the actual entity component as usual but under a "made-up" join key starting with `:>/` (the habitual https://blog.wsscode.com/pathom/v2/pathom/2.2.0/core/placeholders.html[Pathom "placeholder"] ns). The query `[.. {:>/dummy [:person/id :person/name]} ..]` is effectively the same as ``[.. :person/id :person/name ..]`.
 Accessing top-level data from a nested component::
-Sometimes you have a piece of data that you need at multiple places in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `+[... [:current-user '_] ...]+`, which is an ident with the magical value `_` meaning "all of it". 
+Sometimes you have a piece of data that you need at multiple places in the UI tree, loaded at the top of the client DB, for example `:current-user` (to display her name in the top bar and to only show the buttons allowed by her permissions everywhere). The simple solution is link:{url-book}#_link_queries[link query]: instead of including in your query `[... :current-user ...]` (which would only work in the root component), you would include `+[... [:current-user '_] ...]+`, which is an ident with the magical value `pass:[_]` meaning "give me the property's whole value as-is". 
 In more extreme cases, you might need to split your UI into multiple independent parts, using Fulcro's multiple-roots-renderer.
 Sharing data between diverse components on the page::
 If you have a piece of data that multiple components, at different parts of the UI tree, need to access then the simplest solution is to put the data or a reference to the data into the root of the client DB and to use Link Query to access it from those components.
 Inserting a stateful UI component between a parent-child entities::
-This essentially explains why inserting a router component into your UI does not break the query.
+This section essentially explains why inserting a router component into your UI does not break the query. You should not need to do this yourself but it will help you understand routers.
 
 == Routing
 
-In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to load the necessary data - and perhaps also the code -  only when you are are about to display the relevant part of the UI. Often you also want to bind the route to the URL. All this is the task of routing.
+In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to only load the necessary data when you are are about to display the relevant part of the UI. Often you also want to bind the route to the URL. All this is the task of routing.
 
 Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 1. Make Routers that have multiple target components and only display the active one (i.e. the one you have routed to)
 2. The routers can be nested, e.g. to display a particular "page" and then a particular "tab" within it
 3. Bind the route to the URL (Fulcro's routing is fully independent of the URL but the two can be hooked together)
-4. Load data when the component is about to be displayed
+4. Load the data just before the component is about to be displayed
 5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
 6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
 7. Only query for the props of its current target from the client DB, which is important for the performance of bigger apps
@@ -70,9 +78,9 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 To add routing to your application, you need to:
 
-1. Create a router with `dr/defrouter` (which just produces a `defsc`) and with the list of the target components, of which it will display one
-2. Give each target component a unique _route segment_ - think of it as a URL - so that you can route to this target. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers.
-.. The component can use the `:will-enter` hook to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
+1. Create a router using `dr/defrouter` and give it the list of the target components, only one of which will be displayed at a time. Notice that there is no magic in `defrouter` - it just produces an old good `defsc`.
+2. Give each target component a unique _route segment_ so that you can route to this target. You can think of the route segment as a relative URL. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers.
+.. The component can use the `:will-enter` component option function to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
 3. Initialize everything and route to the target you want displayed via `dr/change-route`
 
 Let's explore a minimalist example of routing. This is the UI that we are creating:
@@ -113,7 +121,7 @@ We show either all the people or just a single person. This is the code:
 (dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ; <5>
 ```
 ====
-<1> A router target _must always_ have a query (use `['*]` if it doesn't need any) and a non-nil initial state (so at least an empty `{}`)
+<1> A router target _must always_ have a query (use the "give me everything" query `['*]` if it doesn't need any) and a non-nil initial state (so at least an empty `{}`)
 <2> A target's `:route-segment` assigns it a routing path (relative to an ancestor target, if any)
 <3> The `:route-segment` may also contain placeholders to capture parameters from the route (here `:person-id`),
     which can then be accessed in `:will-enter` under that keyword
@@ -144,8 +152,8 @@ WARNING: will-enter can be called multiple times as part of the route resolution
            :append (conj (comp/get-ident AllPeople {}) :all-people))
     [#:person{:id 100 :name "Kamča" :biography "..."}
      #:person{:id 123 :name "Doubravka" :biography "..."}])
-  (dr/change-route! app ["person" "123"]) ; after set-root or mount! ; <5>
-  ;; Note: 👆🏿 will warn https://book.fulcrologic.com/#warn-uism-sm-not-in-state; ignore!
+  (dr/change-route! app ["person" "123"])                       ; <5>
+  ;; Note: 👆🏿 will warn https://book.fulcrologic.com/#warn-uism-sm-not-in-state; ignore! <7>
   ;; or: (dr/change-route! app (dr/path-to Person "123"))           ; <6>
   ;; or: (dr/change-route! app (dr/path-to Person {:person-id "123"})) ; <6>
   (app/mount! app Root "app" {:initialize-state? false}))
@@ -156,25 +164,25 @@ WARNING: will-enter can be called multiple times as part of the route resolution
 <3> We use `dr/change-route!` with the absolute route (concatenation of all route segments along the way from Root) to display the desired component
 <4> When we start the application, we need to initialize the dynamic routing subsystem with `dr/initialize!`
 <5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!`
-    * Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router. Ignore it.
     * link:{url-book}#_setting_the_route_early[The Fulcro book advises]: "`An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine.`" - see the example code below the quote
 <6> Alternatively, instead of hard-coding the route as a vector of strings, we can use `(path-to & targets-and-params)` with component names to get the route - which is easier to navigate and to refactor. In the map form, there is just a single map with all the route's params at the very end.
+<7> Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router (because `dr/initialize!` is asynchronous and does not finish before the `dr/change-route!` call). You can safely ignore it.
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
 === Binding the route to the URL
 
-Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and to create our own routing function that also updated the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with spaces or v.v. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
+Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and to create our own routing function that also updates the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with spaces or vice versa. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
 
 The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library (you can choose and pick whatever parts you want) and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. Also remember to link:{url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter).
 
-If you do not want to include RAD or like video, have a look at https://youtu.be/oQpmKWBm9HE?t=1275[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). (You might need to go a little back in the video.)
+If you do not want to include RAD or if you like to learn via video, have a look at https://youtu.be/oQpmKWBm9HE?t=867[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). You may also find useful https://github.com/aeberts/fulcro-notes-public/blob/master/fulcro-videos-pt15-sessions-and-routing.org[these time-stamped notes from the video] by Alex Eberts.
 
-NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. fall backs to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
+NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. falls back to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
 === Loading data when a component is routed to (for the first time)
 
-Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target (which often is the case) - namely its `:will-enter`. (A key disadvantage of the former is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
+Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target - namely its `:will-enter` option. (A key disadvantage of componentWillMount is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
 
 .Loading data when a target is routed to
 ====
@@ -225,7 +233,7 @@ What happens when loading data in a deferred route takes too long? What if it fa
 <2> `current-state = nil` is the initial state, before the router has been routed to - i.e. when you failed to initialize it properly via `change-route!`, as described above (there is also the `:inital` state but I have not seen it in practice)
 <3> `:pending` for a deferred route, after the `:deferred-timeout` passed but before the `:error-timeout`
 <4> `:failed` if the deferred route has not become ready (as indicated by `dr/target-ready`) within the `:error-timeout` since the route event
-<5> We should see no other states, namely `:routed`, unless we set `:always-render-body? true`
+<5> We do not expect to see any other states, namely `:routed` - because in this state the target itself is displayed and not the router's body (unless we set `:always-render-body? true`)
 ====
 
 Key points to know:
@@ -233,9 +241,9 @@ Key points to know:
 * There are two timeouts that control the router's behavior with respect to deferred routes, `:deferred-timeout` (default 100ms)
   and `:error-timeout` (default 5s). You can override the default values when calling `d/change-route!`, link:{url-cljdoc-fulcro}com.fulcrologic.fulcro.routing.dynamic-routing#change-route![see its docstring].
 * You can use the body of the router and its `current-state`. It is only displayed when the target is not "ready" to be displayed
-* The router only switches from the current target to the pending one - displaying its body while it is not ready - after the `:deferred-timeout` has passed.
+* The router only switches from the current target to displaying its body while waiting for a pending target only after the `:deferred-timeout` has passed (but it switches to the target immediately when it gets ready)
 * If the mutation `(dr/target-ready {:target ident}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (it can still become "ready" later, if the load eventually finishes, and the target will be displayed)
-* Thus we can use `:pending` to display a loading indicator, if it takes longer than the `:deferred-timeout`, and `:failed` to show an error message telling the user it is either taking too long or failed
+* Thus we can use `:pending` to display a loading indicator, if it takes longer than the `:deferred-timeout`. We can use the `:failed` state to show an error message telling the user it is either taking too long or failed
 
 === Nesting routers
 
@@ -271,7 +279,7 @@ Somewhere under a router target, we can also use relative routing:
 (dr/change-route-relative! teams-this ["player" "123"])
 ```
 
-We can even route from one target to another sibling target:
+We can even route from one target to another sibling target by prefixing the relative route with `:...`:
 
 ```clojure
 ;; Inside Player:
@@ -285,7 +293,9 @@ Always route to a leaf target! (Or do so at least once, e.g. during app initiali
 
 === A router inside a newly ``load!``ed component
 
-If the parent component of a router did not exist upon application initialization - for example because it has a dynamic ident such as `:ident :person/id` and its data was ``load!``-ed later - then it will not be "linked" properly to the router, i.e. its data in the client DB will miss something like `:<the router prop you made up> [::dr/id :<YourRouterComponentName>]`. (Remember that `:initial-data` only has an effect at the application start and not when you add new data later.) Thus you need to add the "link" manually, using link:{url-book}#_pre_merge[`:pre-merge`] (a component hook called by Fulcro before normalizing and merging incoming data). Pre-merge gets the loaded, denormalized data and returns denormalized data.
+Imagine you have the non-singleton component Person, with an ident like `[:person/id "<some-value>"]`. Inside Person, you want to show routable tabs with different groups of information about the person (job info, health history, family, ...). So you decide to use a router for this.
+
+But there is a problem. It is likely the component's data wasn't part of the initial state of the application and only was load!-ed later. Thus it will not be "linked" properly to the router, i.e. its data in the client DB will be missing something like `:<the router prop you made up> [::dr/id :<YourRouterComponentName>]`. For components that exist at the application start, this link is established by including the router property in their initial state and composing it up to the Root, as we discussed above, but here you need to establish the link yourself. You add the "link" manually using link:{url-book}#_pre_merge[`:pre-merge`], which is a component option holding a function called by Fulcro before normalizing and merging incoming data. Pre-merge gets the loaded, denormalized data and returns the same denormalized data, with you custom modifications. See here:
 
 ```clojure
 ;; Somewhere in the app: `(df/load! app [:person/id 123] MyPerson)`
@@ -325,4 +335,4 @@ You can learn more about it in https://blog.jakubholy.net/2020/fulcro-divergent-
 
 === Form state management
 
-== Etc... (UISM, dynamic.recursive/union queries, ...)
+== Etc... (UISM, dynamic.recursive/union queries, react interop, ...)
