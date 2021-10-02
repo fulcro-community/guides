@@ -210,7 +210,7 @@ Often we only want to load data when it is actually necessary, i.e. when the com
 <4> Return `route-deferred` with the ident and a completion function that will be executed shortly by Fulcro, and which needs to eventually trigger the `dr/target-ready` post-mutation to tell Fulcro that the component is ready. Here the completion function does load the data and uses ``load!``'s `:post-mutation` and `:post-mutation-params` to make sure that `target-ready` is transacted after the load.
 ====
 
-This is also called link:{url-book}#_deferred_routing[deferred routing and you can read more] about it in the Fulcro book.
+This is also called link:{url-book}#_deferred_routing[deferred routing and you can read more] about it in the Fulcro book. Here is a https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/deferred-routing/src/com/example/ui.cljs#L30[complete, working example you can play with].
 
 ==== On router timeouts and errors
 
