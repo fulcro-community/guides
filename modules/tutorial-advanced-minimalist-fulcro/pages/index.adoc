@@ -70,7 +70,7 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 3. Bind the route to the URL (Fulcro's routing is fully independent of the URL but the two can be hooked together)
 4. Load the data just before the component is about to be displayed
 5. The target component can dynamically decide whether to allow the user to route to it or to route out of it (e.g. you do not want to allow the user to leave a half-filled form until she either saves it or cancels the edit)
-6. Split the code so that parts of it can only be loaded when the relevant part of the application is going to be displayed
+6. Split the code so that parts of it will only be loaded when the part of the application they define is going to be displayed
 7. Only query for the props of its current target from the client DB, which is important for the performance of bigger apps
 8. Display a loading indicator after a short delay and to mark the route as failed if it does not complete within a time limit
 
@@ -78,10 +78,10 @@ Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 To add routing to your application, you need to:
 
-1. Create a router using `dr/defrouter` and give it the list of the target components, only one of which will be displayed at a time. Notice that there is no magic in `defrouter` - it just produces an old good `defsc`.
-2. Give each target component a unique _route segment_ so that you can route to this target. You can think of the route segment as a relative URL. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers.
+1. Create a router using `dr/defrouter` and give it the list of the target components, only one of which will be displayed at a time. Notice that there is no magic in `defrouter` - it just produces an old good `defsc`
+2. Give each target component a unique _route segment_ so that you can route to this target. You can think of the route segment as a relative URL. It starts with a non-empty literal string and may contain other strings and placeholders (keywords) for capturing dynamic _route parameters_ such as IDs. They do compose, if you have multiple levels of nested routers
 .. The component can use the `:will-enter` component option function to access the route parameters (which are always strings) and to translate them into the actual ident via `(dr/route-immediate <ident>)` or `route-deferred`
-3. Initialize everything and route to the target you want displayed via `dr/change-route`
+3. Initialize everything and then route to the target you want displayed via `dr/change-route`
 
 Let's explore a minimalist example of routing. This is the UI that we are creating:
 
@@ -125,11 +125,11 @@ We show either all the people or just a single person. This is the code:
 <2> A target's `:route-segment` assigns it a routing path (relative to an ancestor target, if any)
 <3> The `:route-segment` may also contain placeholders to capture parameters from the route (here `:person-id`),
     which can then be accessed in `:will-enter` under that keyword
-<4> A target may use the `:will-enter` hook to access route params and to tell Fulcro which ident
+<4> A target may use the `:will-enter` component option function to access route params and to tell Fulcro which ident
     to route to (here via `dr/route-immediate`)
 <5> `defrouter` creates the router component. It needs at least the list of its targets in `:router-targets`
 
-WARNING: will-enter can be called multiple times as part of the route resolution algorithm and MUST NOT side-effect. 
+WARNING: will-enter can be called multiple times as part of the route resolution algorithm and MUST NOT side-effect 
 
 .Bare essentials of Fulcro routing (2nd half - Root and init)
 ====
@@ -166,7 +166,7 @@ WARNING: will-enter can be called multiple times as part of the route resolution
 <5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!`
     * link:{url-book}#_setting_the_route_early[The Fulcro book advises]: "`An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine.`" - see the example code below the quote
 <6> Alternatively, instead of hard-coding the route as a vector of strings, we can use `(path-to & targets-and-params)` with component names to get the route - which is easier to navigate and to refactor. In the map form, there is just a single map with all the route's params at the very end.
-<7> Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router (because `dr/initialize!` is asynchronous and does not finish before the `dr/change-route!` call). You can safely ignore it.
+<7> Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router because `dr/initialize!` is asynchronous and does not finish before the `dr/change-route!` call. You can safely ignore it.
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
