@@ -172,17 +172,17 @@ See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/e
 
 === Binding the route to the URL
 
-Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and to create our own routing function that also updates the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with spaces or vice versa. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
+Reflecting the current route in the URL and changing the URL according to the route is simple. We just need to hook into the HTML 5 History API to call `change-route!` when the URL changes and to create our own routing function that also updates the URL before calling `change-route!`. Mapping from the URL to the route and vice versa just requires replacing `/` with spaces and vice versa. You can look at Fulcro RAD's `routing/html5-history` for inspiration, namely at link:{url-code-rad}routing/html5_history.cljc#L96[how it updates the URL via `.pushState`] and how it link:{url-code-rad}routing/html5_history.cljc#L143[uses `.addEventListener`] for the https://developer.mozilla.org/en-US/docs/Web/API/Window/popstate_event[`"popstate"` event] to get notified of URL changes.
 
-The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library (you can choose and pick whatever parts you want) and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. Also remember to link:{url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter).
+The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fulcro-rad] as a library and to use its `com.fulcrologic.rad.routing/route-to!` instead of `change-route!`. You also need to link:{url-code-rad-demo}src/shared/com/example/client.cljs#L58[install-route-history! during app initialization] and perhaps also {url-code-rad-demo}/src/shared/com/example/client.cljs#L32[set the route at startup] (and not only when it is changed thereafter). Remember that RAD is just an addon library to Fulcro and you can choose and pick whatever parts you want.
 
 If you do not want to include RAD or if you like to learn via video, have a look at https://youtu.be/oQpmKWBm9HE?t=867[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). You may also find useful https://github.com/aeberts/fulcro-notes-public/blob/master/fulcro-videos-pt15-sessions-and-routing.org[these time-stamped notes from the video] by Alex Eberts.
 
-NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. falls back to the application HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
+NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. falls back to the application's HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
 === Loading data when a component is routed to (for the first time)
 
-Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target - namely its `:will-enter` option. (A key disadvantage of componentWillMount is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
+Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target - namely its `:will-enter` component option function. (A key disadvantage of componentWillMount is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
 
 .Loading data when a target is routed to
 ====
@@ -200,13 +200,13 @@ Often we only want to load data when it is actually necessary, i.e. when the com
                        ident
                        #(df/load! app ident Person
                          {:post-mutation `dr/target-ready
-                           :post-mutation-params {:target ident}}))))}
+                          :post-mutation-params {:target ident}}))))}
   ...)
 ```
-<1> Use `:will-enter`, which is called when it is decided to route to the target (and must return `route-immediate` or `route-deferred`)
+<1> Use `:will-enter`, which is called when it is decided to route to the target (and must return `route-immediate` or `route-deferred`). Beware that it may be called multiple times and must not side-effect.
 <2> Construct the ident of the component that will be displayed, leveraging the provided route-params
     (as defined by the `:route-segment`)
-<3> If we have already loaded the data previously then route to it immediately. Otherwise load it first.
+<3> If the data has already been loaded previously then route to the component immediately. Otherwise load it first.
 <4> Return `route-deferred` with the ident and a completion function that will be executed shortly by Fulcro, and which needs to eventually trigger the `dr/target-ready` post-mutation to tell Fulcro that the component is ready. Here the completion function does load the data and uses ``load!``'s `:post-mutation` and `:post-mutation-params` to make sure that `target-ready` is transacted after the load.
 ====
 
@@ -216,7 +216,7 @@ This is also called link:{url-book}#_deferred_routing[deferred routing and you c
 
 What happens when loading data in a deferred route takes too long? What if it fails? The router has you covered:
 
-.Router with timeouts, loading indicator, and an error message
+.Router with timeouts, a loading indicator, and an error message
 ====
 ```clojure
 (dr/defrouter MyRouter [_ {:keys [current-state route-factory route-props]}]
@@ -231,18 +231,18 @@ What happens when loading data in a deferred route takes too long? What if it fa
 ```
 <1> The body of the router is only displayed when the target is not ready (unless you set `:always-render-body? true`). Thus the only router states we will ever see here are those listed below.
 <2> `current-state = nil` is the initial state, before the router has been routed to - i.e. when you failed to initialize it properly via `change-route!`, as described above (there is also the `:inital` state but I have not seen it in practice)
-<3> `:pending` for a deferred route, after the `:deferred-timeout` passed but before the `:error-timeout`
+<3> `:pending` is active for a deferred route, after the `:deferred-timeout` passed but before the `:error-timeout` - it also ends if `dr/target-ready` is transacted for the target ident
 <4> `:failed` if the deferred route has not become ready (as indicated by `dr/target-ready`) within the `:error-timeout` since the route event
 <5> We do not expect to see any other states, namely `:routed` - because in this state the target itself is displayed and not the router's body (unless we set `:always-render-body? true`)
 ====
 
 Key points to know:
 
-* There are two timeouts that control the router's behavior with respect to deferred routes, `:deferred-timeout` (default 100ms)
-  and `:error-timeout` (default 5s). You can override the default values when calling `d/change-route!`, link:{url-cljdoc-fulcro}com.fulcrologic.fulcro.routing.dynamic-routing#change-route![see its docstring].
+* There are two timeouts that control the router's behavior with respect to deferred routes, `:deferred-timeout` (default 20ms)
+  and `:error-timeout` (default 5s). You can override the default values when calling `dr/change-route!`, link:{url-cljdoc-fulcro}com.fulcrologic.fulcro.routing.dynamic-routing#change-route![see its docstring].
 * You can use the body of the router and its `current-state`. It is only displayed when the target is not "ready" to be displayed
-* The router only switches from the current target to displaying its body while waiting for a pending target only after the `:deferred-timeout` has passed (but it switches to the target immediately when it gets ready)
-* If the mutation `(dr/target-ready {:target ident}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (it can still become "ready" later, if the load eventually finishes, and the target will be displayed)
+* The router switches from displaying the previous target to displaying the router's body while waiting for a pending target only after the `:deferred-timeout` has passed (but it switches to the target immediately when it gets ready)
+* If the mutation `(dr/target-ready {:target <ident>}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (the target can still become "ready" later, if the load eventually finishes, and the target will be displayed)
 * Thus we can use `:pending` to display a loading indicator, if it takes longer than the `:deferred-timeout`. We can use the `:failed` state to show an error message telling the user it is either taking too long or failed
 
 === Nesting routers
@@ -318,9 +318,9 @@ But there is a problem. It is likely the component's data wasn't part of the ini
 Read more in the Fulcro Book, link:{url-book}#_composing_the_routers_state_into_the_parent[20.4. Composing the Router’s State into the Parent].
 
 
-=== Routing-related component hooks
+=== Routing-related component options
 
-We have already seen `:will-enter` but link:{url-book}#_routing_targets[there are also other optional component hooks] you might want to know about: `:route-cancelled`, `:will-leave`, `:allow-route-change?`, `:route-denied`.
+We have already seen `:will-enter` but link:{url-book}#_routing_targets[there are also other optional component options] you might want to know about: `:route-cancelled`, `:will-leave`, `:allow-route-change?`, `:route-denied`.
 
 .Deep dive: how do routers work?
 ****
