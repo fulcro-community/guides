@@ -178,6 +178,8 @@ The simplest solution is to include https://github.com/fulcrologic/fulcro-rad[fu
 
 If you do not want to include RAD or if you like to learn via video, have a look at https://youtu.be/oQpmKWBm9HE?t=867[Fulcro – Part 15: Sessions and UI Routing] that shows how to do the integration manually (though with a helper history library). You may also find useful https://github.com/aeberts/fulcro-notes-public/blob/master/fulcro-videos-pt15-sessions-and-routing.org[these time-stamped notes from the video] by Alex Eberts.
 
+Chris O'Donnell has a nice, short, clear post about https://chrisodonnell.dev/posts/giftlist/routing/#html5-routing[how to bind the URL and Fulcro routing together using Pushy].
+
 NOTE: To make sure the user can reload the URL from the server, make sure that any path other than images, JS etc. falls back to the application's HTML page - https://github.com/fulcrologic/fulcro-rad-demo/blob/develop/src/shared/com/example/components/ring_middleware.clj#L48[see how fulcro-rad-demo does it].
 
 === Loading data when a component is routed to (for the first time)
