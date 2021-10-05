@@ -129,7 +129,7 @@ We show either all the people or just a single person. This is the code:
     to route to (here via `dr/route-immediate`)
 <5> `defrouter` creates the router component. It needs at least the list of its targets in `:router-targets`
 
-WARNING: will-enter can be called multiple times as part of the route resolution algorithm and MUST NOT side-effect 
+WARNING: will-enter can be called multiple times as part of the route resolution algorithm and MUST NOT side-effect in its body. Use `dr/route-deferred` and do any necessary side-effects in the completion function passed to it, which is guaranteed to be called only once.
 
 .Bare essentials of Fulcro routing (2nd half - Root and init)
 ====
@@ -184,7 +184,7 @@ NOTE: To make sure the user can reload the URL from the server, make sure that a
 
 === Loading data when a component is routed to (for the first time)
 
-Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target - namely its `:will-enter` component option function. (A key disadvantage of componentWillMount is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel.) Let's see how it looks.
+Often we only want to load data when it is actually necessary, i.e. when the component that needs them is being displayed. In React it is achieved via the `componentWillMount` hook. In Fulcro we have a better solution if the component is a router target - namely its `:will-enter` component option function. A key disadvantage of componentWillMount is "cascading loads", when a component A loads its data and renders its child B, triggering B's own load etc. In Fulcro we route to a leaf target and thus it and all intermediaries can start loading data in parallel. Let's see how it looks.
 
 .Loading data when a target is routed to
 ====
@@ -246,6 +246,10 @@ Key points to know:
 * The router switches from displaying the previous target to displaying the router's body while waiting for a pending target only after the `:deferred-timeout` has passed (but it switches to the target immediately when it gets ready)
 * If the mutation `(dr/target-ready {:target <ident>}` is not triggered within `:error-timeout` of `change-route!` then the state becomes `:failed` (the target can still become "ready" later, if the load eventually finishes, and the target will be displayed)
 * Thus we can use `:pending` to display a loading indicator, if it takes longer than the `:deferred-timeout`. We can use the `:failed` state to show an error message telling the user it is either taking too long or failed
+
+==== Lazy loading elsewhere in Fulcro
+
+Lazy-loading data in `:will-enter` is just one of possibilities. You can always xref:tutorial-minimalist-fulcro:index.adoc#_how_to[use `:without` and `load-field!`] to limit what is loaded when and use events such as the user hovering over an element or triggering navigation to load additional data. You can either use your custom mutations for the relevant user actions and add the load there or/and make your own version of `change-route!` that does custom data loading. You can xref:tutorial-minimalist-fulcro:index.adoc#_bonus_tracking_loading_state_with_load_markers[leverage load markers] to track whether the load is ongoing or has failed.
 
 === Nesting routers
 
