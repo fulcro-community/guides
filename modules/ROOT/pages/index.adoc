@@ -8,4 +8,5 @@ https://fulcro-community.github.io/guides[view online] with proper formatting.
 
 * xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro] - helps to answer the questions where to start? How to go about learning Fulcro? I.e. how to navigate the heaps of the available material?
 * xref:tutorial-minimalist-fulcro:index.adoc[Minimalist Fulcro Tutorial] - This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY. The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
+* xref:tutorial-advanced-minimalist-fulcro:index.adoc[Advanced Minimalist Fulcro Tutorial] - A follow-up to the Minimalist Fulcro Tutorial that focuses on a few non-essential yet often necessary topics in the traditional minimalist way - e.g. routing, form state, UISM.
 * xref:tutorial-eql-pathom-overview:index.adoc[An EQL and Pathom Overview]
