@@ -316,7 +316,7 @@ But there is a problem. It is likely the component's data wasn't part of the ini
   {:ident :person/id
    :query [:person/id :ui/person-router ...]
    :initial-state {:ui/person-router {}}                         ; <1>
-   :pre-merge (fn [{:keys [loaded-data-tree current-state-map]}] ; <2>
+   :pre-merge (fn [loaded-data-tree :data-tree, current-state-map :state-map}] ; <2>
                 (merge (comp/get-initial-state MyPerson)         ; <3>
                   {:ui/person-router (get-in current-state-map (comp/get-ident PersonRouter {}))} ; <4>
                   loaded-data-tree))}
