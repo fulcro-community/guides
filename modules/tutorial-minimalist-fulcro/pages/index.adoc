@@ -799,7 +799,7 @@ OK, you have completed the tutorial. What now?
 . Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
 . Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your frontend data to your components tree.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
-. Create your own app! For something easy to understand and start with, check out the minimalist-fulcro-template-backendless[https://github.com/holyjak/minimalist-fulcro-template-backendless].
+. Create your own app! For something easy to understand and start with, check out the https://github.com/holyjak/minimalist-fulcro-template-backendless[minimalist-fulcro-template-backendless].
 
 ## Help us get better!
 
