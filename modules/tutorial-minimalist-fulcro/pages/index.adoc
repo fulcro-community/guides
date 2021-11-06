@@ -8,6 +8,7 @@
 :url-eql: https://edn-query-language.org/eql/1.0.0
 :url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
 :url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
+:url-divergence: https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/
 
 Author: https://holyjak.cz/[Jakub Holý] & contributors
 
@@ -278,7 +279,7 @@ The figure below shows how the query fragments of all components that have a que
 .Components, query, and data: UI -> query -> data -> UI
 image::fulcro-ui-query-data.svg[]
 
-NOTE: Notice that the _query_ sent and the _data_ returned are only a subset of the UI tree, skipping over the stateless, UI-only components (the empty squares) that have no query of their own, such as the middle one in the leftmost branch. While "data entities" and "UI components" often correspond 1:1, it is not always the case. You can learn more in https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge].
+NOTE: Notice that the _query_ sent and the _data_ returned are only a subset of the UI tree, skipping over the stateless, UI-only components (the empty squares) that have no query of their own, such as the middle one in the leftmost branch. While "data entities" and "UI components" often correspond 1:1, it is not always the case. You can learn more in link:{url-divergence}[Fulcro Explained: When UI Components and Data Entities Diverge].
 
 Beware: You must not copy and paste the child's query into the parent's but rather use `(comp/get-query <Child>)` as demonstrated. Both for +++<abbr title="Don't Repeat Yourself">DRY</abbr>+++ and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
 
@@ -323,7 +324,8 @@ When do you need to define initial state?
 * When you want to make sure that the component has particular props before any data is loaded from the backend. (Advanced) F.ex. router targets must not have nil props but are OK with `{}` and thus declare at least an empty initial state
 * When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries]
 * When a child component has an initial state, to compose it up (f.ex. dynamic routers do)
-* (Advanced) To pre-establish connections between data entities such as a form-like component and its {url-book}#FormState[form state]
+* To establish links (_edges_) between components so that Fulcro can find the data you query for as it walks the Root query and Client DB in tandem to fulfill the query (as demonstrated under the second point of the article link:{url-divergence}#_adapting_backend_data_to_the_ui_components_structure[Divergent Data - Adapting to components]). 
+** (Advanced) To pre-establish connections between data entities such as a form-like component and its {url-book}#FormState[form state]
 
 #### Rendering DOM: the body of a component
 
@@ -780,13 +782,21 @@ image::fulcro-interfaces.svg[]
 
 [qanda]
 Can different components have the same ident?::
-Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB. You can learn more in https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge].
+Yes. Typically these components are different (sub)views of the same data entity. So you could have a "person" data entity and the components `PersonOverview` with the query `[:person/id :person/fname :person/image-small]` and `PersonDetails` with the query `[:person/id :person/fname :person/age :person/image-large]`, both with `:ident :person/id`. The combined data of both would be stored at the same place in the client DB. You can learn more in link:{url-divergence}[Fulcro Explained: When UI Components and Data Entities Diverge].
 
 When, where does Fulcro load data from the backend?::
 It does not. You have to `load!` the data yourself, upon a user action or at a suitable point in the lifecycle of the application, as discussed above. (Fulcro RAD is an exception, its reports and forms do load its data but they just do what you would do manually, trigger load from their `:will-enter`. Though that is beyond the scope of this tutorial.)
 
 What is in the client DB? Is it only Fulcro-managed, `load!`-ed data of components?::
 No! The client DB is just a map and you can put there (typically through a mutation) whatever data you want, in whatever form you see fit. (I.e. it does not need to be in the entity type -> entity id -> entity props form.) While Fulcro will use it to store any data `load!`-ed from the backend - normalized, if you defined idents - you can also put there any additional data that you need. You could put there e.g. `:auth-token "XYZ..."`, `:selected-customer [:customer/id "Volvo"]`, or `:my-custom-tree {:I {:have [:kid1 :kid2 'etc]}}`.
+
+## Must read
+
+There are two pretty important articles that you should read or at least skim over pretty soon. You need to know what they contain so that when you run into the problems they address (and you will!), you will know where to look for answers. The articles are:
+
+{url-divergence}[Fulcro Explained: When UI Components and Data Entities Diverge] - when the simplistic assumption that every _UI component_ corresponds to a _data entity_ breaks down and the entity data tree does not match the UI tree and you need to figure out how to make them play together.
+
+https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and you need to find the cause.
 
 ## Next steps
 
@@ -797,7 +807,7 @@ OK, you have completed the tutorial. What now?
 . Come back and re-read this tutorial. You will likely understand it much better and get things you overlooked upon the first reading.
 . Have a look at the xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro].
 . Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
-. Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it. Refer to the https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting Decision Tree] when things do not work out and to https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] when you need to figure out how to map your frontend data to your components tree.
+. Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
 . Create your own app! For something easy to understand and start with, check out the https://github.com/holyjak/minimalist-fulcro-template-backendless[minimalist-fulcro-template-backendless].
 
