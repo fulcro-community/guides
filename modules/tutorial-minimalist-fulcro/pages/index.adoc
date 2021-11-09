@@ -138,7 +138,7 @@ _Of a component_: a function that returns an ident (discussed later).
 Mutation (Fulcro)::
 When components want to "change" something - update data, upload a file - they submit a mutation describing the desired change to the transaction subsystem. Mutations can be local and/or remote. In the context of Fulcro, a request to load data from the backend is also a mutation (while to Pathom it is sent as a plain EQL query). Remote mutations are sent as {url-eql}/specification.html#_mutations[EQL mutations].
 Normalization of data::
-Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only their _idents_. The normalization depends on components declaring their idents.
+Data in the client DB is mostly stored in a https://en.wikipedia.org/wiki/Database_normalization[normalized form in the database sense]. I.e. entities do not include other entities but only refer to them using their _idents_. The normalization depends on components declaring their idents.
 Query::
 Each stateful component declares what data it needs using an EQL query (or, more exactly, a query fragment). If it has stateful children, it also includes their query in its own.
 Resolver, Pathom::
@@ -177,6 +177,8 @@ You will learn:
 * How data is stored in the normalized (de-duplicated) client database
 
 ### The anatomy of a Fulcro component: props, query, ident, body [[_the_anatomy_of_a_fulcro_component_query_ident_body]]
+
+(_ToC: <<Component's props,props>> | <<Component's `:query`,`:query`>> | <<Component's `:ident`,`:ident`>> | <<Component's `:initial-state`,`:initial-state`>> | <<Rendering DOM: the body of a component,body>>_)
 
 Fulcro components, which are also React components, are the heart of a Fulcro application. Let's explore them:
 
@@ -309,7 +311,7 @@ There are two special symbols you can use in a query: `+'*+` instead of a proper
 
 For a _data entity_, ident(ifier) is akin to a self-contained foreign key in SQL: it contains the (unique) name of an entity's ID property and its value, in a 2-element vector. For example: `[:person/id 123]`.
 
-For a _component_, its `:ident` is a function that returns the ident of the associated data entity, typically based on its props (captured from the component's arguments): `(fn [] [:person/id (:person/id props)])`. We call this the {url-book}#_lambda_idents[lambda form] but there are also shortcuts for common cases such as the {url-book}#_keyword_idents[keyword form] and the {url-book}#_template_idents[template form]. 
+For a _component_, its `:ident` is a function that returns the ident of the associated data entity, typically based on its props (captured from the component's arguments): `(fn [] [:person/id (:person/id props)])`. We call this the {url-book}#_lambda_idents[lambda form] but there are also shortcuts for common cases such as the {url-book}#_keyword_idents[keyword form] (which would simplify the previous example to just `:person/id`) and the {url-book}#_template_idents[template form]. 
 
 For _singleton components_ we use, by convention, the "property name" `:component/id` and a hardcoded value specific to the component - typically its name as a keyword. For instance `:ident (fn [] [:component/id :AllPeopleList])`.
 
@@ -317,15 +319,43 @@ For _singleton components_ we use, by convention, the "property name" `:componen
 
 #### Component's `:initial-state`
 
-A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare the props it wants to get passed on the first "frame", i.e. the first render. The data will be normalized based on idents and stored into the client DB. You can use it to define the state of the application before any data is loaded from the server-side.
+A component can also specify `:initial-state (fn [params] <some data matching the expected props>)` to declare the props it wants to get passed on the first "frame", i.e. the first render. The data will be _normalized_ based on idents and stored into the client DB. You can use it to define the state of the application before any data is loaded from the server-side and to establish links (_edges_) between (typically singleton) components / data entities in the client DB.
+
+Initial state must be composed into the parent's in the same way as queries do, using `comp/get-initial-state`.
 
 When do you need to define initial state?
 
-* When you want to make sure that the component has particular props before any data is loaded from the backend. (Advanced) F.ex. router targets must not have nil props but are OK with `{}` and thus declare at least an empty initial state
-* When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries]
-* When a child component has an initial state, to compose it up (f.ex. dynamic routers do)
-* To establish links (_edges_) between components so that Fulcro can find the data you query for as it walks the Root query and Client DB in tandem to fulfill the query (as demonstrated under the second point of the article link:{url-divergence}#_adapting_backend_data_to_the_ui_components_structure[Divergent Data - Adapting to components]). 
-** (Advanced) To pre-establish connections between data entities such as a form-like component and its {url-book}#FormState[form state]
+. When you want to make sure that the component has particular props before any data is loaded from the backend. (Advanced) F.ex. router targets must not have nil props but are OK with `{}` and thus declare at least an empty initial state
+. When a child component has an initial state, to compose it up (f.ex. dynamic routers do)
+. To establish links between components so that Fulcro can find the data you query for as it walks the Root query and Client DB in tandem to fulfill the query (as demonstrated under the second point of the article link:{url-divergence}#_adapting_backend_data_to_the_ui_components_structure[Divergent Data - Adapting to components]).
+  * When the component has no state of its own and only queries for global data using {url-book}#_link_queries[Link Queries] 
+  * (Advanced) To pre-establish links between data entities such as a form-like component and its {url-book}#FormState[form state]
+
+TIP: Instead of the link:{url-book}#_lambda_mode[lambda mode] of :initial-state presented above, we often use the more concise link:{url-book}#_template_mode[template mode], which is just a map where `:some/child {}` will be replaced with `:some/child (comp/get-initial-state SomeChild {})` provided the query includes a join on the same key, like: `[{:some/child (comp/get-query SomeChild)} ..]`.
+
+.Establish edges in the client DB graph using initial-state
+====
+```clojure
+;; Given these two components:
+(defsc CurrentUser [_ _] {:ident (fn [] [:component/id :CurrentUser])
+                          :query [<something...>]
+                          :initial-state {}})          ; <1>
+(defsc Root [_ _] {:query [{:current-user (comp/get-query CurrentUser)}]
+                   :initial-state {:current-user {}}}) ; <2>
+
+;; The Client DB will thus gain the following two lines:
+{...
+ :current-user [:component/id :CurrentUser] ; <3>
+ :component/id {:CurrentUser {}}}           ; <4>
+```
+<1> The child component must have non-nil data in the client DB, which this ensures
+<2> The parent includes the child's initial state (using the _template mode_)
+<3> Thanks to Root's init. state, the top-level key `:current-user` is added;
+    and because the child has an ident, its state is normalized and we end up
+    with an ident pointing to the actual data
+<4> CurrentUser's data end up normalized in the `:component/id` table and it is the
+    empty map we gave it at (1)
+====
 
 #### Rendering DOM: the body of a component
 
