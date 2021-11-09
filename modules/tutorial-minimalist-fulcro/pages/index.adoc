@@ -178,7 +178,7 @@ You will learn:
 
 ### The anatomy of a Fulcro component: props, query, ident, body [[_the_anatomy_of_a_fulcro_component_query_ident_body]]
 
-(_ToC: <<Component's props,props>> | <<Component's `:query`,`:query`>> | <<Component's `:ident`,`:ident`>> | <<Component's `:initial-state`,`:initial-state`>> | <<Rendering DOM: the body of a component,body>>_)
+(_ToC: link:#_components_props[props] | link:#_components_query[:query] | link:#_components_ident[:ident] | link:#_components_initial_state[:initial-state] | <<Rendering DOM: the body of a component,body>>_)
 
 Fulcro components, which are also React components, are the heart of a Fulcro application. Let's explore them:
 
