@@ -285,7 +285,8 @@ NOTE: Notice that the _query_ sent and the _data_ returned are only a subset of 
 
 Beware: You must not copy and paste the child's query into the parent's but rather use `(comp/get-query <Child>)` as demonstrated. Both for +++<abbr title="Don't Repeat Yourself">DRY</abbr>+++ and because `get-query` also adds important metadata to the composed query about the origin of the individual fragments so that Fulcro can later use it to normalize data from `load!` or `merge-component!` correctly.
 
-Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`.
+Fulcro combines the query and the (normalized) client database to produce the tree of data that is passed as props to the Root component. Which, in turn, will pass the relevant parts to its children, as we did with `address`. +
+🎥 See the 5 min demo https://youtu.be/rzK0_k5lzg4[Fulcro explained: Turning Root query into props tree] to see how this works 🎥.
 
 TIP: Don't be mislead, the query is not a standalone query that could be "run" directly against the database (as you know from SQL or re-frame subscriptions). It is rather a _query fragment_, which only makes sense in the context of its parent's query. Only the root component's properties are resolved directly against the client database. A query such as `[:person/id :person/fname]` is meaningless on its own - which person? Only in the context of a parent, such as `[{:all-people [<insert here>]}]` (in an imaginary `AllPeopleList` component) does it make sense.
 
@@ -844,7 +845,7 @@ OK, you have completed the tutorial. What now?
 . Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
 . Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
-. Create your own app! For something easy to understand and start with, check out the https://github.com/holyjak/minimalist-fulcro-template-backendless[minimalist-fulcro-template-backendless].
+. Create your own app! For something easy to understand and start with, check out the https://github.com/holyjak/minimalist-fulcro-template-backendless[minimalist-fulcro-template-backendless]
 
 ## Help us get better!
 
