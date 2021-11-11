@@ -295,6 +295,8 @@ TIP: Don't be mislead, the query is not a standalone query that could be "run" d
 A query is a vector listing the properties of the data entity you want. If the property value is another data entity, you specify its props using a _join_: `+{:the/prop [:nested/prop1]}+`. Aside of querying for props on the current data entity, you can also query for any data entity using its ident, so a query may include something like `+[:person/id 123]+`. This can again be wrapped in a join to only request specific properties.
 
 There are two special symbols you can use in a query: `+'*+` instead of a property means "give me all the properties". And `+'_+` used as the id value in an ident means "give me the property at the root of the client DB" and it is used in {url-book}#_link_queries[Link Queries]. (`+'_+` is a Fulcro-only thing, not an EQL thing, while `+'*+` will also be understood by Pathom.)
+
+The Fulcro Dev Guide has a great section on link:{url-book}#_eqlthe_query_and_mutation_language[all aspects of EQL relevant to Fulcro], including some advanced features that we do not discuss here.
 ****
 
 #### Component's `:ident`
