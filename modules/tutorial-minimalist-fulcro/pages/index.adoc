@@ -815,6 +815,7 @@ image::fulcro-interfaces.svg[]
 
 * *Ident* is used exclusively for data normalization. If missing, the component's data entity's data will be nested in the parent component's data. If present, it defines the "table" and its key where the data entity will be in the client DB and the occurrence of the data in the parent entity is replaced with the ident. Ident can be static - typically `[:component/id <component name>]` or dynamic, i.e. depending on a prop, such as `[:person/id <id value>]`.
 * *Query* defines what attributes/props a component wants. Upon render, the data is read from the client DB, either from the parent data entity's attribute where the data is nested (when it is not normalized) or from the "table" and key the ident in the parent entity's attribute points to. The query can also be used to load a tree of data from the backend. A parent component must compose the child's query into its own, using an EQL join and `comp/get-query`.
+* *Client DB* holds the client-side data, mostly normalized (depending on idents). The UI is rendered based on this data so anything not "right" in the UI is likely due to bad/missing/disconnected data. The only things that can change data in the client DB are `:initial-state` and mutations, which includes `df/load!` (and you playing in the REPL).
 
 ## FAQ
 
