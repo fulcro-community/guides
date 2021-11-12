@@ -348,4 +348,21 @@ You can learn more about it in https://blog.jakubholy.net/2020/fulcro-divergent-
 
 === Form state management
 
+== Advanced queries: recursive, union
+
+=== Union queries
+
+BEWARE: Combining recursion and unions (e.g. a parent with a union query and a child with a recursive one) might not do what you expect - the union parent, not the child will be the target of the recursion.
+
+Code: https://github.com/fulcrologic/fulcro/blob/1af65250f2acc50f61bdfda041533f66bfb9ad82/src/main/com/fulcrologic/fulcro/algorithms/normalize.cljc#L35-L39
+
+> So unions are a bit fiddly. They are really mean to address the common case of heterogeneous lists of things, and since there is really only one thing in the database for a given resolution, but two components (the union and the child) there is a problem dealing with recursive things. Should the recursion be the union or child? Unions ended up being a relatively lightly used feature, and recursion on unions even less so. As a result this question never got more attention.
+It is perfectly valid to want either. But the system is coded to assume you probably want the way it is used, because UI recursion is usually a tree of the top-level heterogeneous thing.
+
+Avoiding unions:
+
+>  I typically avoid unions in this kind of scenario and just make a component that queries for all the possible things the nodes might have, and generalize to a :node/id for normalization, and a type field for switching up rendering within the component. (A multimethod is good for the latter.)
+
+WARNING: Don't nest unions. It is complicated, untested, might blow up.
+
 == Etc... (UISM, dynamic.recursive/union queries, react interop, ...)
