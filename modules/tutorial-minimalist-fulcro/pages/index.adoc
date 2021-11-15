@@ -691,6 +691,7 @@ When to call `load!`? Fulcro does not load any data from the server for you, you
 . In an event handler (e.g. onClick)
 . When a component is mounted, using React's `:componentDidMount` - though this is suboptimal and can result in loading cascades (A mounts and loads its data; after it gets them, its child B is mounted and loads its data, ...); a better option is leveraging Fulcro's deferred routing
 . When a component is scheduled to be displayed, i.e. when using Fulcro's {url-book}#_dynamic_router[Dynamic Routers] with {url-book}#_deferred_routing[Deferred Routing]. However this is an advanced and non-trivial topic so we will not delve into it here.
+. From a link:{url-book}#_ui_state_machines[UI State Machine] (UISM) when a relevant event is triggered
 
 #### What to `load!`?
 
