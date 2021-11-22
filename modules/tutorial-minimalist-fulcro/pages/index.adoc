@@ -85,6 +85,12 @@ This led to the following decisions:
 
 Fulcro is also quite well designed. It is based on a small set of orthogonal building blocks and it doesn't hide anything from you - you can always go a level deeper into its internals to achieve what you need (as long as you are aligned with its overall philosophy). Its flexibility and customizability is surprising - all of the critical features from network interaction to rendering optimization are easily customizable. It is also very careful about providing only the tools that are generally applicable and avoiding "features" that might help some people but stand in the way of others. But thanks to the aforementioned flexibility, you can implement what you need for your unique use case yourself.
 
+What do users say (redacted slightly for correctness):
+
+> I'm positively surprised, almost shocked... Not only because it seems to be very carefully crafted and designed, but also because it manifests several concepts, practices and intuitions that I've been using and gathering, and then goes way beyond that by refining and composing them into a whole, adaptable system. I so far feel blessed and lucky, because Fulcro validates my half baked tools, ideas and practices, but also because it seems to be a framework that I can build on with confidence.
+>
+> -- Denis Baudinot, a freelance full-stack developer, December 2020
+
 ****
 To learn more about the reasoning behind Fulcro, listen to the ClojureScript Podcast https://podcasts.apple.com/us/podcast/s4-e6-fulcro-with-tony-kay-part-1/id1461500416?i=1000479361034[S4 E6 Fulcro with Tony Kay (Part 1)] (2020), which explores the origins of and key motivation for Fulcro, and read the {url-book}#_getting_started[Ch. 4. Getting Started] of the Fulcro Developers Guide, which demonstrates how various problems are made easier thanks to the way Fulcro is. To learn to use Fulcro, read on :-).
 ****
