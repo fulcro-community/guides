@@ -65,7 +65,9 @@ All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[
 
 [qanda]
 When to return a data map directly and when to put it inside a `{:my-prop ...}`?::
-If you are returning a single data entity (e.g. a person) then you return it directly. But if you are returning a _list_ of entities - or a scalar value - then you need to wrap it inside a map (because resolvers can only return maps), as we see with `:all-people` above.
+If you are returning a single data entity (e.g. a person) then you return it directly. But if you are returning a _sequence_ of entities - or a scalar value - then you need to wrap it inside a map (because resolvers can only return maps), as we see with `:all-people` above.
+How to return a sequence of (child) entities?::
+As described above, a sequence needs to be wrapped in a map. Make sure that the _sequence is a vector_ if you want the entities normalized. Auto normalization for a to-many will only occur if it is given a vector. Lists and seqs (such as produced by `map`) will not be normalized.
 
 ## A word of warning
 
