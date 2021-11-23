@@ -63,6 +63,8 @@ Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom i
 
 All the resolvers must be {url-pathom}connect/basics.html#_baseline_boilerplate[registered with a Pathom "parser"] and thus available to be used to fulfill queries. All resolvers can also take {url-pathom-resolvers}#_parameters[additional, optional parameters], which are used to implement concerns such as pagination. (And you don't really need to know more than that they exists, for now.)
 
+#### FAQ
+
 [qanda]
 When to return a data map directly and when to put it inside a `{:my-prop ...}`?::
 If you are returning a single data entity (e.g. a person) then you return it directly. But if you are returning a _sequence_ of entities - or a scalar value - then you need to wrap it inside a map (because resolvers can only return maps), as we see with `:all-people` above.
