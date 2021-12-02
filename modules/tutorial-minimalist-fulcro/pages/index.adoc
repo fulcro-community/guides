@@ -109,7 +109,7 @@ image::fulcro-system-view.svg[Fulcro system view,630,290]
 . Frontend
 .. _UI_ - Fulcro/React components render a DOM and submit mutations (= action name + parameters) to the transaction (Tx) subsystem
 .. _Tx_ (transaction subsystem) - asynchronously executes local mutations and sends remote mutations and queries to the remote backend
-.. _Client DB_ - data from the backend is _normalized_ into the client-side DB (data cache); _Tx_ typically schedules a re-render afterwards
+.. _Client DB_ - data from the backend is _normalized_ into the client-side DB (data cache); _Tx_ typically schedules a re-render afterwards. The cached data is turned into a data tree according to the needs of the UI, to feed and render the UI.
 . Backend
 .. _Pathom_ receives EQL queries and mutations and responds with a data tree
 
