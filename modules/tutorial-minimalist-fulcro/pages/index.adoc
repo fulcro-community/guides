@@ -850,6 +850,14 @@ https://blog.jakubholy.net/2020/troubleshooting-fulcro/[Fulcro Troubleshooting D
 
 ## Next steps
 
+First, a few words of wisdom:
+
+> User X: I have to admit, though, I'm really struggling with Fulcro. Each time I want to add a new bit to my app, it's a struggle. I'm losing my motivation. It took me three days to get to a point with Svelte I'm still not close to reaching after two weeks with Fulcro. Just can't seem to get a solid grip on everything.
+>
+> xceno: @X I've been down the exact same path as you. I was a full-stack dev, writing C#, Java, JS and TypeScript for roughly a decade. I could crank out react UI's in a couple minutes (but I always wrote my own state management libs in the long term).
+Long story short, when I made the switch, I learned CLJ and Fulcro and Fulcro RAD and Datomic at the time, I think we can all imagine how well that went 😉
+I was tempted for a few days to just say screw it and write my frontend in TS with a REST API in the backend the way I always did, but boy I'm glad I didn't. If you push through the learning curve of all the things you'll be rewarded with a very stable system that provides with so much nice things for basically free once you "get it".
+
 OK, you have completed the tutorial. What now?
 
 . {url-book}#_install_fulcro_inspect[Install Fulcro Inspect] and {url-book}#_configure_chrome_development_settings[enable custom formatters in Chrome] to display Clojure data nicely in the Console - trust me, these two are indispensable!
