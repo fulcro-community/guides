@@ -1,3 +1,4 @@
 * Learning
 ** xref:learning-fulcro.adoc[Guide to learning Fulcro]
 ** xref:minimalist-fulcro-tutorial/index.adoc[Minimalist Fulcro Tutorial]
+** xref:tutorial-advanced-minimalist-fulcro/index.adoc[Advanced Minimalist Fulcro Tutorial]
