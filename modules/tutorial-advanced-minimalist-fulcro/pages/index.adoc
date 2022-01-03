@@ -87,10 +87,6 @@ Let's explore a minimalist example of routing. This is the UI that we are creati
 
 image::bare-essentials-routing-ui-mockup.png["A mock up of a UI with a router (via wiredjs.com)"]
 
-image::../images/bare-essentials-routing-ui-mockup.png["FIXME: remove"]
-
-+++<!--FIXME: Remove the relative path img above-->+++
-
 We show either all the people or just a single person. This is the code:
 
 .Bare essentials of Fulcro routing (1st half - router & targets)
