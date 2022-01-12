@@ -296,6 +296,8 @@ It is essential that each router in the app is in a routed state before it is di
 Always route to a leaf target! (Or do so at least once, e.g. during app initialization.)
 (A router will display its first target by default but it is not the same as routing to it manually and some things _will not work_.) See link:{url-book}#_partial_routes[20.6.1. Partial Routes] for details.
 
+TIP: You can hae a look at the https://github.com/fulcrologic/fulcro/blob/develop/src/workspaces/com/fulcrologic/fulcro/cards/nested_dynamic_routing_tree_cards.cljs[nested_dynamic_routing_tree demo] included in Fulcro's source.
+
 === Multiple routers side by side
 
 Aside of nesting routers inside each others, you might also in some cases want to have multiple sibling routers. This is a topic too rare and advanced even for this tutorial, so I will just refer you to the Fulcro Dev Guide's link:{url-book}#_simultaneous_on_screen_routers[20.8. Simultaneous On-Screen Routers] for details.
