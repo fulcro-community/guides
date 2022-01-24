@@ -23,7 +23,7 @@ There is a lot of functionality that Fulcro offers. Routing, UI state machines, 
 ### Recommended approach
 
 1. Have a brief look at https://github.com/fulcro-community/awesome-fulcro[awesome-fulcro] so that you get an overview of what is available and can back to particular resources when you will need them
-2. Go through the link:minimalist-fulcro-tutorial/index.adoc[Minimalist Fulcro Tutorial] and its prerequisities
+2. Go through the xref:tutorial-minimalist-fulcro:index.adoc[Minimalist Fulcro Tutorial] and its prerequisites
 3. Watch the https://www.youtube.com/playlist?list=PLVi9lDx-4C_T7jkihlQflyqGqU4xVtsfi[Fulcro 3 tutorial videos] - especially Parts 1 to 7 cover many of the pitfalls of getting started (Alex Eeberts' https://github.com/aeberts/fulcro-notes-public[Fulcro Video Notes (i.e. table of content)] (i.e. table of content) might be helpful)
 4. Read the beginning of https://book.fulcrologic.com/[Fulcro Developers Guide], at least up to and including "4. Getting Started"
    * Notice that the Book is essentially reference material and covers many areas and depth that you don’t need to get a general understanding of Fulcro
