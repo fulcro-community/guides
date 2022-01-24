@@ -63,6 +63,8 @@ This section essentially explains why inserting a router component into your UI 
 
 In a single page application, you want to enable the user to navigate to parts of the application and to only display these "active" parts. You might also want to only load the necessary data when you are are about to display the relevant part of the UI. Often you also want to bind the route to the URL. All this is the task of routing.
 
+TIP: Dynamic Routing is not always the only or best solution. Sometimes it is simpler to implement "routing" manually by having something like `(case my-route :target1 (ui-target1 ..) ...)` in the "routing" component. If you want to reflect the do-it-yourself route in the URL, you can do it manually e.g. using https://github.com/kibu-australia/pushy[pushy]. You could even transit- and base64-encode your manual routing state and put it inside a query param. And if you want to load data on-demand, you can still do that - for example in the `:onClick` handler that triggers the route change. Dynamic Routing is truly necessary when you want to avoid over-fetching data from the client DB and/or when you only want to load code for the active route.
+
 Fulcro's link:{url-book}#_dynamic_router[Dynamic Routing] enables you to:
 
 1. Make Routers that have multiple target components and only display the active one (i.e. the one you have routed to)
@@ -134,11 +136,16 @@ WARNING: will-enter can be called multiple times as part of the route resolution
 
 (defsc Root [this {:ui/keys [router]}]
   {:query [{:ui/router (comp/get-query MyRouter)}]           ; <1>
+   ;:query [{:ui/router (comp/get-query MyRouter)}
+   ;        [::uism/asm-id ::MyRouter]]                      ; <8>
    :initial-state {:ui/router {}}}                           ; <2>
+  ;(let [router-state (or (uism/get-active-state this ::MyRouter) :initial)] ; <8>
+  ;  (if (= :initial router-state)
+  ;    (dom/div :.loading "Loading...")
   (dom/div
     (dom/p (dom/button {:onClick #(dr/change-route! this ["all"])} "All") ; <3>
            (dom/button {:onClick #(dr/change-route! this ["person" "123"])} "Person 123"))
-    (ui-my-router router)))
+    (ui-my-router router))) ;))
 
 (defn init [app]
   ;; Avoid startup async timing issues by pre-initializing things before mount
@@ -159,10 +166,10 @@ WARNING: will-enter can be called multiple times as part of the route resolution
 <2> You _must_ compose the router's initial state into its parent (notice we use the https://book.fulcrologic.com/#_template_mode[template mode of initial state] so the `{}` actually means "include the router's initial state")
 <3> We use `dr/change-route!` with the absolute route (concatenation of all route segments along the way from Root) to display the desired component
 <4> When we start the application, we need to initialize the dynamic routing subsystem with `dr/initialize!`
-<5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!`
-    * link:{url-book}#_setting_the_route_early[The Fulcro book advises]: "`An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine.`" - see the example code below the quote
+<5> It is highly advisable to also make sure each router in the app is "routed" and thus in a well-defined state before it is ever displayed. Here we achieve that by routing to it in the init function. This can only be done after the application's state is initialized, i.e. either `app/set-root!` with `{:initialize-state? true}` or `app/mount!` But it can still cause a "flickering" of the UI since the effect of the `change-route!` call is asynchronous. Below in the point (8) you can see how to postpone displaying the UI until the route has been applied.
 <6> Alternatively, instead of hard-coding the route as a vector of strings, we can use `(path-to & targets-and-params)` with component names to get the route - which is easier to navigate and to refactor. In the map form, there is just a single map with all the route's params at the very end.
 <7> Note: As of Fulcro 3.5.6, you are likely to get the https://book.fulcrologic.com/#warn-uism-sm-not-in-state[Attempt to get an ASM path...] error for the router because `dr/initialize!` is asynchronous and does not finish before the `dr/change-route!` call. You can safely ignore it.
+<8> link:{url-book}#_setting_the_route_early[The Fulcro book advises]: "`An even better approach is to use state to block rendering until such time as a route or load is ready just by looking at the current state of your top-most router’s state machine.`" We can do that by querying for the top router's UI state machine's state and displaying something appropriate such as "Loading..." while it is `:initial` or `nil`. (In some cases you might instead want to maintain a custom `:ui/ready?` flag on the Root component. You can leverage the fact that all `transact!` calls are executed sequentially so if you transact a mutation that sets it to true _after_ you have called `dr/change-route!` then you can be sure that it happens after the route is applied.)
 
 See the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/bare-essentials-routing/src/com/example/ui.cljs[full code here].
 
