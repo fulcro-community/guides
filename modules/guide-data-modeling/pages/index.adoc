@@ -26,3 +26,16 @@ A form is a good example. We might have a `PersonForm` defsc to edit the Person 
 Sometimes a component has transitory state that it does not make sense to keep in Fulcro's client DB, such as the flag indicating that the user is hovering over a button. You can use React's component-local state via Fulcro's https://book.fulcrologic.com/#_react_lifecycle_methods[`:initLocalState`] and https://cljdoc.org/d/com.fulcrologic/fulcro/3.5.13/api/com.fulcrologic.fulcro.components#set-state![comp/set-state!] and `comp/get-state`. See the https://book.fulcrologic.com/#_dynamically_rendering_into_a_canvas[Example 6. Drawing in a Canvas] in the Fulcro Developers Guide for an example.
 
 You can read about https://book.fulcrologic.com/#FormState[Fulcro's Form State Support] and you can have a look at this https://github.com/fulcrologic/fulcro-rad-semantic-ui/blob/f431d9d650444e46ac3fa36b2fde74714984c1fe/src/main/com/fulcrologic/rad/rendering/semantic_ui/text_field.cljc#L27[`ViewablePasswordField`] from Fulcro RAD.
+
+## Case studies
+
+### Splitting the event list
+
+I have a list of events at the root of my data. I would like to split the events into "error" and "warning" events and display them separately. I would also like to move the display out of `Root`, into a separate `EventList` component to simplify the root. How to do that?
+
+Some ideas:
+
+* `EventList` could be stateless and get `(map ui-event events)` from the Root as its child but that does not really satisfy what we want
+* Make `EventList` a stateful component and restructure the data accordingly
+
+...
