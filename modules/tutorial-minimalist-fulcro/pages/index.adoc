@@ -230,6 +230,7 @@ The second argument to a `defsc` is the props (short for properties) - map of da
 * While React props must be a JavaScript map with string keys, Fulcro props - both for `defsc` components, `dom/<tag>` components, and vanilla JS components link:++{url-book}#_factory_functions_for_js_react_components++[wrapped with `interop/react-factory`] - can be and typically are a _Clojure_ map (possibly containing nested Clojure data structures) with (typically qualified) keyword keys. (Fulcro actually stores its props under "fulcro$value" in the React JS map, but that is transparent to you.)
 * You can use lazy sequences of children (produced by `map` etc.).
 
+[[qualified-keywords]]
 .On qualified keywords
 ****
 We use qualified keywords a lot to avoid name conflicts and communicate ownership. If it is new to you, here is a brief summary of how to use them.
