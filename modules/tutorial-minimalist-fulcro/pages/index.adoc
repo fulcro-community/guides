@@ -21,6 +21,8 @@ toc::[]
 
 You have now set out on a three part journey:
 
+TIP: You might want to start by doing my self-paced https://github.com/holyjak/fulcro-intro-wshop[workshop Introduction to creating webapps with Fulcro] to get familiar with the concepts and the amazing tooling before deep-diving into learning the details.
+
 . Study *this tutorial* to gain enough essential knowledge to be able to read, understand, and tinker with Fulcro applications and solidify it by doing the accompanying https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro *tutorial exercises*].
 . *Read real-world Fulcro code* to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
 . Learn by modifying an existing app:
