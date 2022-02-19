@@ -1,8 +1,8 @@
-# Minimalist Fulcro Tutorial
+# Minimalist Full-Stack Fulcro Tutorial
 :toc:
 :toc-placement!:
 :toclevels: 2
-:description: a minimalistic introduction to Fulcro that focuses on HOW and not WHY (aside of a short section). The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
+:description: a minimalistic introduction to Fulcro that focuses on HOW and (almost) not WHY. The goal is provide you with the basic building blocks so that you can create full-stack web applications.
 
 :url-book: https://book.fulcrologic.com/
 :url-eql: https://edn-query-language.org/eql/1.0.0
@@ -12,8 +12,10 @@
 
 Author: https://holyjak.cz/[Jakub Holý] & contributors
 
-This is a minimalistic introduction to Fulcro that focuses on HOW and not WHY (aside of a short section).
-The goal is to enable you to read, understand, and tinker with the code of a Fulcro application.
+This is a minimalistic introduction to Fulcro that focuses on HOW and (almost) not WHY.
+The goal is provide you with the basic building blocks that essentially everybody creating full-stack web applications needs. You will likely eventually run into needs not discussed here - for example deep integration with React libraries, web sockets, complex queries, or mutations that return data. Or you might want to leverage Fulcro's optional "addons" instead of do-it-yourself solutions such as form state handling, UI state machines, routing, or rapid application development support. You are expected to refer to our advanced tutorials, the link:{url-book}[Fulcro Developers Guide], and other resources to address those needs. But that what you are learning here will get you far and provide a very solid basis for incorporating any more advanced stuff that you might need.
+
+TIP: You _might not even need everything_ this tutorial teaches as it focuses on full stack operations that involve both the frontend and backend. Perhaps you don't need to load remote data. Or maybe your data is read-only and you don't care about making changes. Feel free to skip the parts that are not relevant to you. I hope to provide soon more focused and even more minimal tutorials that introduce each topic separately so that you can more easily pick and choose only those you actually need.
 
 toc::[]
 
@@ -867,7 +869,16 @@ OK, you have completed the tutorial. What now?
 . Do the https://github.com/fulcro-community/fulcro-exercises[minimalist Fulcro tutorial exercises] to check and challenge your theoretical knowledge in practice.
 . Come back and re-read this tutorial. You will likely understand it much better and get things you overlooked upon the first reading.
 . Have a look at the xref:guide-learning-fulcro:index.adoc[Guide to learning Fulcro].
-. Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps["real apps"]
+. Read real-world Fulcro code to verify and expand your understanding - the official https://github.com/fulcrologic/fulcro-template[fulcro-template] and other more less link:++https://fulcro-community.github.io/main/awesome-fulcro/README.html#_real_apps++["real apps"]
+. Clone the https://github.com/fulcrologic/fulcro/tree/develop/src/todomvc/fulcro_todomvc[Fulcro Todo MVC] application, study it, and try to extend and change it. Some ideas:
+  ** Add support for multiple TODO lists and the ability to select which one to show
+  ** Replace the atom with an actual database for persistent data storage
+  ** Make it a multi-user application: add login and web sockets to receive concurrent changes from other clients
+  ** Add support for including rich content in the TODOs - a formatted description, images, ...
+  ** Add tags and rich support for filtering
+  ** Add pagination
+  ** Add search
+  ** <your own ideas here...>
 . Clone the fulcro-template, study its code, delete parts and try to recreate them from scratch, extend it.
 . Go back to {url-book}[Fulcro Developers Guide] and read the introductory chapters to gain a deeper understanding
 . Create your own app! For something easy to understand and start with, check out the https://github.com/holyjak/minimalist-fulcro-template-backendless[minimalist-fulcro-template-backendless]
