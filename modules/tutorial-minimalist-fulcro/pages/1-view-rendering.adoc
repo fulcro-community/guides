@@ -26,7 +26,9 @@ in words, the view is a "pure" function of the data - we pass all of the data to
 
 The view is naturally a _tree_ of _components_, just as is the case with HTML: imagine a page containing tabs, a tab containing a list of items, each item containing a link... . The data we pass to the view mirrors its shape, i.e. it is also a tree. In React we pass the data tree - called _props_, short for properties - to the root component (the page in our example), which uses whatever it needs (e.g. the tab labels to render a tab switcher) and then passes relevant sub-trees to its child components (e.g. the data of the active tab to the tab component).
 
-Fulcro is not very different from other ClojureScript React wrappers in this regard. Let's see what it looks like.
+When some of the props change, React is smart and does not re-render the components whose props have not changed. This is especially efficient in ClojureScript thanks to the use of immutable data.
+
+ClojureScript React wrappers such as Fulcro provide you with the efficiency of immutable data and make it convenient to use React from a superior language with unparalleled live-reload and powerful REPL. Fulcro is not very different from other ClojureScript React wrappers in this regard. Let's see what it looks like.
 
 ### Creating a view with Fulcro
 
