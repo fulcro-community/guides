@@ -25,7 +25,7 @@ toc::[]
 Fulcro has two core parts that you almost always use together: view rendering and state management. But they actually independent. You can use Fulcro with a different view technology, https://www.youtube.com/watch?v=ng-wxe0PBEg&t=1392s[e.g. with re-frame], even a non-React one https://github.com/phronmophobic/membrane-fulcro[such as Membrane/Skia] for desktop and terminal UIs. And you can use only Fulcro's view rendering without any state management (though you would be better served by a view-only library).
 
 . Introduction (this page)
-. Core: View Rendering (TBD)
+. xref:1-view-rendering.adoc[Core: View Rendering]
 . Core: State Management - Store and read data (TBD)
 . Core: State Management - Mutate data (TBD)
 . Loading data from a backend (TBD)
