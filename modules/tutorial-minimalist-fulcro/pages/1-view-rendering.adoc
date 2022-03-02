@@ -1,0 +1,202 @@
+# Minimalist Fulcro Tutorial Series: Rendering UIs
+:toc:
+:toc-placement!:
+:toclevels: 2
+:description: *TODO*
+
+This is part 1 of the link:index.html[Minimalist Fulcro Tutorial Series] (and the first of the two core parts), where we learn how to render data in a web page.
+
+NOTE: It doesn't make much sense to use Fulcro only as a view technology. Reagent or Helix are better fits for this simple case. Fulcro's true power shines when it is used for state management, especially in combination with server interactions. (And you can even use it with a different view technology, such as Reagent.)
+
+toc::[]
+
+## The Problem
+
+You want to render business data in a web page for the user to view and interact with. And you want the view to update when the data changes, efficiently. You most certainly don't want the UI and the data to become inconsistent.
+
+## The Solution
+
+The genially simple idea of React - that Fulcro builds uponfootnote:[Fulcro is most commonly used with React but have also been used with other view technologies such as text UIs and graphical toolkits] - is:
+
+```
+View = function(Data)
+```
+
+in words, the view is a "pure" function of the data - we pass all of the data to our render function and get back the view, instead of doing tons of small updates to parts of the view as the data changes. Much simpler.
+
+The view is naturally a _tree_ of _components_, just as is the case with HTML: imagine a page containing tabs, a tab containing a list of items, each item containing a link... . The data we pass to the view mirrors its shape, i.e. it is also a tree. In React we pass the data tree - called _props_, short for properties - to the root component (the page in our example), which uses whatever it needs (e.g. the tab labels to render a tab switcher) and then passes relevant sub-trees to its child components (e.g. the data of the active tab to the tab component).
+
+Fulcro is not very different from other ClojureScript React wrappers in this regard. Let's see what it looks like.
+
+### Creating a view with Fulcro
+
+Here we are going to learn how to create a view - i.e. an HTML fragment - with Fulcro.
+
+#### The building blocks
+
+##### Creating HTML elements
+
+.Example
+```clojure
+(dom/section
+  :#main.two-columns.highlight
+  {:style {:border "1px"}}
+  "Hello " (dom/strong "there") "!")
+```
+
+.Example rendered
+```html
+<section id="main" 
+  classes="two-columns highlight"
+  style="border:1px">
+  Hello <strong>there</strong>!)
+</section>
+```
+
+.General structure
+```clojure
+(ns x (:require [com.fulcrologic.fulcro.dom :as dom]))
+
+(dom/<tag> ; `<tag>` is any HTML5 element such as div, h1, or ul
+  <[optional] keyword encoding classes and an element ID> ; <1>
+  <[optional] map of the tag's attributes (or React props)> ; <2>
+  <[optional] children>) ; <3>
+```
+<1> A shorthand for declaring CSS classes and ID: add as many `.<class name>` as you want and optionally a single `#<id>`. Equivalent to the attributes map `{:classes [<class name> ...], :id <id>}`.
+<2> A Clojure map of the element's attributes/props. In addition to what React supports, you can specify `:classes` as a vector of class names, which can contain `nil` - those will be removed. It is merged with any classes specified in the keyword shorthand form.
+<3> Zero or more children
+
+##### Defining a Fulcro component
+
+The view is composed of a tree of _components_ that take props and render DOM. We define a component like this:
+
+.Example
+```clojure
+(defsc Root [this props]
+  {}
+  (dom/p "Hello " (:name props) "!"))
+```
+
+.General structure
+```clojure
+(ns x (:require [com.fulcrologic.fulcro.components :as comp :refer [defsc]]))
+
+(defsc <Name>             ; <1>
+  [<arguments>]           ; <2>
+  {<options>}             ; <3>
+  <body to be rendered>)  ; <4>
+```
+<1> `defsc` stands for **Def**ine **S**tateful **C**omponent and it is a macro that produces a JS class extending `react/Component` (unless you opt for using hook-based function components by setting the option `:use-hooks? true`)
+<2> The arguments are `this` and the component's `props` and are available in the body. The props is a _Clojure_ map, not JS, thanks to Fulcro
+<3> A map of options that typically includes `:ident`, `:query`, `:initial-state`, routing-related options, and any custom options you add. We will not use it in this tutorial
+<4> The body will become the render function of the React component, i.e. this is what will produce the DOM
+
+##### Child components
+
+Having a single huge component is hard to maintain. We can break parts of the view into separate components and include those in a parent component:
+
+```clojure
+(defsc Child [_ props] {} (:name props))
+(def ui-child (comp/factory Child)) ; <1>
+; or: (def ui-child (comp/factory Child {:keyfn :name})) ; <2>
+
+(defsc Parent [_ props]
+  {}
+  (dom/div "I, " (:name props) " am the father of:"
+    (ui-child (-> props :kids first))))
+;; Assuming that the parent props are e.g.:
+;; {:name "Darth Vader" :kids [{:name "Luke"}]}
+```
+<1> We need to turn the `Child` JS class into a function that returns a React element given props
+<2> `comp/factory` also can take a map of options, the key one being `keyfn`, which should be a function of props that returns a unique identifier for the child. https://reactjs.org/link/warning-keys[React needs a key] when children are rendered in a list (e.g. via `mapv`), otherwise it complains that "`Each child in a list should have a unique "key" prop.`"
+
+*About factories*: `comp/factory` returns a function turning props into an actual element. Some frameworks and JSX hide this transformation, while Fulcro keeps it visible. And it is a good thing because it makes it easier to customize the elements, f.ex. by setting the `keyfn` or to make it simpler to pass in extra props (such as callbacks) via `comp/computed-factory`. (Which is beyond the scope of this tutorial)
+
+##### Mounting and rendering the view
+
+Having defined a view via a component, we need to supply it its props and render it to somewhere in the DOM. We will look at two ways of doing it.
+
+First we will look at rendering a Fulcro component when using it just for view management (though, as discussed at the beginning, there is little sense in that):
+
+.Rendering a Fulcro component via raw React interop
+```clojure
+(ns x (:require ["react-dom" :as rdom] 
+                [com.fulcrologic.fulcro.application :as app]))
+
+;; Assuming the html page has a block element with id=app, we do:
+(rdom/render (comp/with-parent-context (app/fulcro-app) ; <1>
+                ((comp/factory Root) props))            ; <2>
+  (js/document.getElementById "app"))                   ; <3>
+```
+<1> Fulcro components assume they are used in the context of a Fulcro app so we need to pass it in even though we don't really use it here
+<2> As explained in <<Child components>>, we need to turn the Root class into an actual React element, passing in the props
+<3> Finally we need to put the rendered DOM somewhere into the HTML page, here into the element with the id _app_
+
+If we also use Fulcro for state management, maintaining the app state inside the fulcro-app instance, then we can use its standard way of rendering:
+
+.Rendering a Fulcro component the standard Fulcro way
+```clojure
+(defonce app (app/fulcro-app {:initial-db props}))     ; <1>
+(app/mount! app Root "app" {:initialize-state? false}) ; <2>
+```
+<1> Initialize the Fulcro app and set the props as the initial app state (normally you would `df/load!` the data from a server or use `merge!` or `merge-component!` - we will discuss these in the next tutorial)
+<2> Turn Root into an element and render it inside the element with the id _app_; do not initialize state since we have already set it above
+
+###### Updating the view on a data change
+
+To update the UI when data changes:
+
+* If you use the `rdom/render` approach then simply re-run the call to render
+* If you use the standard `app/mount!` then Fulcro will automatically re-render the UI if the data changes using its standard `transact!` mechanism, which we will discuss in the next tutorial
+
+#### A complete example
+
+.The HTML fragment we want to get
+```html
+<div>
+  <h1 id="hdr1" class="pagetitle">Hello Sokrates !</h1>
+  <p style="border: 1px black">Below are some tabs</p>
+  <ul><li>Tab 1</li></ul>
+</div>
+```
+
+.The Fulcro view definition
+```clojure
+(def props
+  {:username "Sokrates"
+   :tabs [{:label "Tab 1"}]})
+
+(defsc Tab [this {:keys [label]}]
+  {}
+  (dom/li label))
+
+(def ui-tab (comp/factory Tab {:keyfn :label}))
+
+(defsc Root [this props] ; <1>
+  {}                     ; <2>
+  (dom/div               ; <3>
+    (dom/h1 :#hdr1.pagetitle "Hello" (:username props) "!") ; <4>
+    (dom/p {:style {:border "1px black"}} "Below are some tabs")
+    (dom/ul
+      (mapv ui-tab (:tabs props)))))
+
+(defonce app (app/fulcro-app {:initial-db props}))
+(app/mount! app Root "app" {:initialize-state? false})
+```
+
+## Summary
+
+TBD
+
+## TODO
+
+* Computed props ?!
+* React interop (for including JS libs)?
+* React lifecycle methods
+* Local state ??? (but class vs hooks)
+* props:
+** While React props must be a JavaScript map with string keys, Fulcro props - both for `defsc` components, `dom/<tag>` components, and vanilla JS components link:++{url-book}#_factory_functions_for_js_react_components++[wrapped with `interop/react-factory`] - can be and typically are a _Clojure_ map (possibly containing nested Clojure data structures) with (typically qualified) keyword keys. (Fulcro actually stores its props under "fulcro$value" in the React JS map, but that is transparent to you.)
+** You can use lazy sequences of children (produced by map etc.).
+* body
+** Returning multiple elements from the body
+* Even handlers such as `:onClick`?

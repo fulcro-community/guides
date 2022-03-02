@@ -18,6 +18,8 @@ This is a _minimalist_ tutorial that aims to provide you with only what you abso
 
 TIP: You might want to have a look at my self-paced https://github.com/holyjak/fulcro-intro-wshop[workshop Introduction to creating webapps with Fulcro] to get an overview of what Fulcro offers for full-stack web applications and to get familiar with its concepts and the amazing tooling before deep-diving into learning the details.
 
+toc::[]
+
 ## Contents of this tutorial
 
 Fulcro has two core parts that you almost always use together: view rendering and state management. But they actually independent. You can use Fulcro with a different view technology, https://www.youtube.com/watch?v=ng-wxe0PBEg&t=1392s[e.g. with re-frame], even a non-React one https://github.com/phronmophobic/membrane-fulcro[such as Membrane/Skia] for desktop and terminal UIs. And you can use only Fulcro's view rendering without any state management (though you would be better served by a view-only library).
