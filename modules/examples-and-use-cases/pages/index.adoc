@@ -1,0 +1,102 @@
+= Examples and Use Cases
+:toc:
+:toc-placement!:
+:toclevels: 2
+:description: Examples of Simple Use cases
+
+Author: https://holyjak.cz/[Jakub Holý] & contributors
+
+toc::[]
+
+== Front End with routing
+
+.Front End with routing
+====
+```clojure
+(ns app.client
+  (:require
+   [com.fulcrologic.fulcro.algorithms.merge :as merge]
+   [com.fulcrologic.fulcro.application :as app]
+   [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+   [com.fulcrologic.fulcro.dom :as dom]
+   [com.fulcrologic.fulcro.routing.dynamic-routing :as dr :refer [defrouter]]))
+
+; ------------------------------------------------------------------------------
+(defsc Person [this {:person/keys  [name city state] :as props}]
+  {:query   [:person/id 
+             :person/name 
+             :person/city 
+             :person/state]
+   :ident    :person/id}
+  (dom/div (str "Name: " name ", City: " city ", State: " state)))
+
+(def ui-person (comp/factory Person {:keyfn :person/id}))
+
+; ------------------------------------------------------------------------------
+(defsc People [_this {:keys [people] :as _props}]
+  {:ident (fn [] [:component/id ::People])
+   :query [{:people (comp/get-query Person)}]
+   :route-segment ["people"]
+   :initial-state {}}
+  (dom/div {}
+   (dom/h1 "People:") 
+   (dom/ul (map ui-person people))))
+
+; ------------------------------------------------------------------------------
+(defsc Main [_this _props]
+  {:ident         (fn [] [:component/id ::main])
+   :query         [:main]
+   :initial-state {:main "stuff"}
+   :route-segment ["main"]}
+  (dom/div (dom/h1 "Main")
+           (dom/p "This is the main pages")))
+
+; ------------------------------------------------------------------------------
+(defrouter TopRouter [_this {:keys [current-state _pending-path-segment]}]
+  {:router-targets [Main People]}
+  (case current-state
+    :pending (dom/div "Loading...")
+    :failed (dom/div "Loading seems to have failed. Try another route.")
+    (dom/div "Unknown route")))
+
+(def ui-top-router (comp/factory TopRouter))
+
+; ------------------------------------------------------------------------------
+(defsc Root [this {:root/keys [router]}]
+  {:query         [{:root/router (comp/get-query TopRouter)}]
+   :initial-state {:root/router {}}}
+  (dom/div
+    (dom/button {:onClick #(dr/change-route this ["main"])} "Home")
+    (dom/button {:onClick #(dr/change-route this ["people"])} "People")
+    (ui-top-router router)))
+
+; ------------------------------------------------------------------------------
+(defonce SPA (app/fulcro-app))
+
+(defn ^:export init []
+  (app/set-root! SPA Root {:initialize-state? true})
+  (dr/change-route SPA ["main"])
+  (app/mount! SPA Root "app" {:initialize-state? false})
+
+  (merge/merge-component! SPA Person {:person/id    1
+                                      :person/name  "John Doe"
+                                      :person/city  "New York"
+                                      :person/state "New York"}
+                        :append [:component/id ::People :people])
+  (merge/merge-component! SPA Person {:person/id    2
+                                      :person/name  "Ken Smith"
+                                      :person/city  "Los Angelos"
+                                      :person/state "California"}
+                        :append [:component/id ::People :people])
+  (merge/merge-component! SPA Person {:person/id    2})
+  (merge/merge-component! SPA Person {:person/id    3
+                                      :person/name  "Kate Middleton"
+                                      :person/city  "London"
+                                      :person/state "England"}
+                        :append [:component/id ::People :people]))
+
+```
+====
+
+image::fulcro-inspect-db.png[Fulcro Inspect Database View]
+
