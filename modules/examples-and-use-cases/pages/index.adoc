@@ -8,6 +8,74 @@ Author: https://holyjak.cz/[Jakub Holý] & contributors
 
 toc::[]
 
+== Front End with data table
+
+.Front End with data table
+====
+```clojure
+
+(ns app.client
+  (:require
+   [com.fulcrologic.fulcro.algorithms.merge :as merge]
+   [com.fulcrologic.fulcro.application :as app]
+   [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+   [com.fulcrologic.fulcro.dom :as dom]))
+
+; ------------------------------------------------------------------------------
+(defsc Person [_this {:person/keys  [name city state] :as _props}]
+  {:query   [:person/id 
+             :person/name 
+             :person/city 
+             :person/state]
+   :ident    :person/id}
+  (dom/div (str "Name: " name ", City: " city ", State: " state)))
+
+(def ui-person (comp/factory Person {:keyfn :person/id}))
+
+; ------------------------------------------------------------------------------
+(defsc People [_this {:keys [people] :as _props}]
+  {:ident (fn [] [:component/id ::People])
+   :query [{:people (comp/get-query Person)}]
+   :route-segment ["people"]
+   :initial-state {}}
+  (dom/div {}
+   (dom/h1 "People:") 
+   (dom/ul (map ui-person people))))
+
+(def ui-people (comp/factory People))
+
+; ------------------------------------------------------------------------------
+(defsc Root [_this {:keys [root]}] 
+  {:query [{:root (comp/get-query People)}]
+   :initial-state {}}
+  (dom/div 
+    (ui-people root)))
+
+; ------------------------------------------------------------------------------
+(defonce SPA (app/fulcro-app))
+
+(defn ^:export init []
+  (app/mount! SPA Root "app")
+  (merge/merge-component! SPA Person {:person/id    1
+                                      :person/name  "John Doe"
+                                      :person/city  "New York"
+                                      :person/state "New York"}
+                        :append [:root :people])
+  (merge/merge-component! SPA Person {:person/id    2
+                                      :person/name  "Ken Smith"
+                                      :person/city  "Los Angelos"
+                                      :person/state "California"}
+                        :append [:root :people])
+  (merge/merge-component! SPA Person {:person/id    2})
+  (merge/merge-component! SPA Person {:person/id    3
+                                      :person/name  "Kate Middleton"
+                                      :person/city  "London"
+                                      :person/state "England"}
+                        :append [:root :people]))
+```
+
+image::front-end-with-data-table-fi-db.png[Fulcro Inspect Database View]
+
 == Front End with routing
 
 .Front End with routing
