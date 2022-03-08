@@ -76,6 +76,71 @@ toc::[]
 
 image::front-end-with-data-table-fi-db.png[Fulcro Inspect Database View]
 
+== Front End with Routing to Each item
+
+.Front End with Routing to each item
+====
+```clojure
+(ns app.client
+  (:require
+   [com.fulcrologic.fulcro.algorithms.merge :as merge]
+   [com.fulcrologic.fulcro.application :as app]
+   [com.fulcrologic.fulcro.components :as comp :refer [defsc]]
+   [com.fulcrologic.fulcro.dom :as dom]
+   [com.fulcrologic.fulcro.routing.dynamic-routing :as dr]))
+
+(defsc AllPeople [_ {:keys [all-people]}]
+  {:ident (fn [] [:component/id ::AllPeople])
+   :query [{:all-people [:person/id :person/name]}]  ;
+   :initial-state {}                                 ;
+   :route-segment ["all"]}                           ;
+  (dom/div
+    (dom/h3 "All People")
+    (dom/ul
+      (mapv (fn [{:person/keys [id name]}] (dom/li {:key id} name))
+        all-people))))
+
+(defsc Person [_ {:person/keys [id name biography]}]
+  {:ident :person/id
+   :query [:person/id :person/name :person/biography]  ;
+   :initial-state {}                                   ;
+   :route-segment ["person" :person-id]                ;
+   :will-enter (fn [_app route-params]                  ;
+                 (dr/route-immediate
+                   [:person/id
+                    (js/parseInt (:person-id route-params))]))}
+  (dom/p (str "Person #" id ": ") (dom/strong name) " - " biography))
+
+(dr/defrouter MyRouter [_ _] {:router-targets [AllPeople Person]}) ;
+
+; ------------------------------------------------------------------------------
+(defonce SPA (app/fulcro-app))
+
+(def ui-my-router (comp/factory MyRouter))
+
+(defsc Root [this {:ui/keys [router]}]
+  {:query [{:ui/router (comp/get-query MyRouter)}]           ; 
+   :initial-state {:ui/router {}}}                           ; 
+  (dom/div
+    (dom/p (dom/button {:onClick #(dr/change-route! this ["all"])} "All") ; 
+           (dom/button {:onClick #(dr/change-route! this ["person" "123"])} "Person 123")
+           (dom/button {:onClick #(dr/change-route! this ["person" "100"])} "Person 100"))
+    (ui-my-router router))) ;))
+
+(defn ^:export init []
+  ;; Avoid startup async timing issues by pre-initializing things before mount
+  (app/set-root! SPA Root {:initialize-state? true})
+  (dr/initialize! SPA)                                         ; 
+  (run! #(merge/merge-component! SPA Person %
+           :append (conj (comp/get-ident AllPeople {}) :all-people))
+    [#:person{:id 100 :name "Kamča" :biography "Bio of person 100"}
+     #:person{:id 123 :name "Doubravka" :biography "Bio of person 123"}])
+  (dr/change-route! SPA ["person" "123"])                       ; 
+  (app/mount! SPA Root "app" {:initialize-state? false}))
+```
+
+image::front-end-with-routing-to-each-item.png[Fulcro Inspect Database View]
+
 == Front End with routing
 
 .Front End with routing
@@ -166,5 +231,5 @@ image::front-end-with-data-table-fi-db.png[Fulcro Inspect Database View]
 ```
 ====
 
-image::fulcro-inspect-db.png[Fulcro Inspect Database View]
+image::front-end-with-routing-fi-db.png[Fulcro Inspect Database View]
 
