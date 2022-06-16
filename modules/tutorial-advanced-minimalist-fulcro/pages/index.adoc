@@ -111,7 +111,7 @@ We show either all the people or just a single person. This is the code:
    :initial-state {}                                   ; <1>
    :route-segment ["person" :person-id]                ; <3>
    :will-enter (fn [app route-params]                  ; <4>
-                 (dr/route-immediate
+                 (dr/route-immediate ; BEWARE: `db :person/id <id>` must already exist
                    [:person/id
                     (js/parseInt (:person-id route-params))]))}
   (dom/p (str "Person #" id ": ") (dom/strong name) " - " biography))
@@ -202,13 +202,14 @@ Often we only want to load data when it is actually necessary, i.e. when the com
    :route-segment ["person" :person-id]
    :will-enter (fn [app route-params]    ; <1>                 
                  (let [ident [:person/id (-> route-params :person-id js/parseInt)]] ; <2>
-                   (if (get-in (app/current-state app) ident)) ; <3>
-                     (dr/immediate ident) 
+                   (if (get-in (app/current-state app) ident)  ; <3>
+                     (dr/route-immediate ident) 
                      (dr/route-deferred    ; <4>
                        ident
+                       ;; Load the data (or mutation that merges them in) in a fn:
                        #(df/load! app ident Person
                          {:post-mutation `dr/target-ready
-                          :post-mutation-params {:target ident}}))))}
+                          :post-mutation-params {:target ident}})))))}
   ...)
 ```
 <1> Use `:will-enter`, which is called when it is decided to route to the target (and must return `route-immediate` or `route-deferred`). Beware that it may be called multiple times and must not side-effect.
