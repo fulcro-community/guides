@@ -202,14 +202,14 @@ on `:list/items` like so:
 {:all-lists
  [{:list/id 1
    :list/name "Personal"
-   :list/items [{:todo/label "Buy Milk"
-                 :todo/label "Cook Dinner"
-                 :todo/label "Mail Letter"}]}
+   :list/items [{:todo/label "Buy Milk"}
+                {:todo/label "Cook Dinner"}
+                {:todo/label "Mail Letter"}]}
   {:list/id 2
    :list/name "Work"
-   :list/items [{:todo/label "Write TPS Report"
-                 :todo/label "Send Emails"
-                 :todo/label "Have Meeting"}]}]}
+   :list/items [{:todo/label "Write TPS Report"}
+                {:todo/label "Send Emails"}
+                {:todo/label "Have Meeting"}]}]}
 ----
 
 Notice a couple of things about the example above:
