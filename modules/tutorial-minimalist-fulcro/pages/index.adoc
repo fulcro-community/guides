@@ -744,21 +744,24 @@ Let's have a look at a simple banking application that shows two lists - an over
  (p (str props)))
 (def ui-account (comp/factory Account))
 
-(defsc AccountList [_ props]
+(defsc AccountList [_ {:account-list/keys [accounts]}]
  ;; Note: In practice, this would be UI-only comp. with no query
  ;; and we would put the list of accounts directly under Root
- {:ident (fn [] [:component/id ::AccountList])
-  :query [{:account-list/accounts (comp/get-query Account)}]}
+ {:ident (fn [] [:component/id :AccountList])
+  :query [{:account-list/accounts (comp/get-query Account)}]
+  :initial-state {}}
  (div
    (h2 "Accounts")
-   (map ui-account accounts)))
+   (map ui-account (:accounts props))))
 (def ui-account-list (comp/factory AccountList))
 
 ;; LEFT OUT Customer, CustomerList, their ui-* ;;
 
 (defsc Root [_ {:root/keys [accounts customers]}]
  {:query [{:root/accounts (comp/get-query AccountList)}
-          {:root/customers (comp/get-query CustomerList)}]}
+          {:root/customers (comp/get-query CustomerList)}]
+  :initial-state {:root/accounts {}
+                  :root/customers {}}}
  (div
    (h1 "Your bank")
    (ui-account-list accounts)
@@ -776,13 +779,15 @@ Let's have a look at a simple banking application that shows two lists - an over
   (pc/defresolver xyz [env _]
     {::pc/input  #{}
      ::pc/output [{:all-accounts [:account/id :account/owner :account/balance]}]}
-    (jdbc/execute! env "select id, owner, balance from account"))
+    {:all-accounts (vec (jdbc/execute! env "select id, owner, balance from account")))}
   ;; and similarly for :all-customers
   )
 ```
 ====
 <1> We load! using Account's query because this one defines what it is we want for each of the accounts
 <2> We instruct load! to place the data where our UI expects them, i.e. inside the AccountList component instead of at the root of the client DB
+
+Check out the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/mfts-7-banking-application/src/com/example/ui.cljs[full source code] of this example.
 
 #### Bonus: Tracking loading state with load markers
 
