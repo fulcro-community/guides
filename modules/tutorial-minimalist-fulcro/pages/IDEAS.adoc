@@ -1,0 +1,58 @@
+# MFT: Improvement ideas
+
+A section on ways to avoid interacting with the app in the browser and instead use the REPL. 
+
+Link MFT sections to the corresponding fulcro-exercises.
+
+## MFT v2 - split
+
+Alex: thoughts about how to think about Fulcro and teaching it
+
+
+*** Fulcro Philosophy and High Level Overview
+
+Goal: Help developers who are completely new to Fulcro to start with an accurate mental model of the philosophy behind Fulcro and how data flows through a typical Fulcro app.
+
+Goal: Identify the ways that Fulcro is similar or different from other frameworks. make sure that assumptions acquired from using other frameworks do not interfere with learning Fulcro.
+
+- Fulcro's approach is based on the idea that an application's view should be a pure function of data (like React).
+- The application's UI is represented by a tree of components (aka a graph).
+- Each component declares their own data needs but..
+- Fulcro components do not request their own data directly (data is passed in from their parent)
+- The "shape" of the data requested from the remote is defined by the tree of UI components
+- Fulcro provides additional features to manage data on the client (unlike e.g. re-frame)
+- Fulcro's Client DB is similar to a normalized Graph Database
+- Fulcro uses "Pathom" to manage transactions with remote servers
+- Pathom is feature-rich and flexible but it works differently than a simple REST end-point.
+- Pathom uses EQL (EDN Query Language) in transactions and in component queries.
+
+*** Why Fulcro?
+
+Goal: Explain that Fulcro is more comprehensive than other frameworks and introduces some novel approaches which are different from the mainstream.
+Goal: Give developers confidence that time invested in learning Fulcro will be effort well spent.
+
+- All web applications are by their nature, full-stack and distributed. While it's great to have a library that "does one thing well", even the most basic web application needs a large number of those libraries to provide a modern user experience (View Rendering, Client Data management, Remote Data management, Errors, Logging, etc. etc.).
+- Tony Kay and the other developers of Fulcro have been building client server applications for over XX years. Fulcro's design is based on encountering and solving some of the most challenging problems that developers face when building and maintaining data-driven applications for real-world clients.
+- It's difficult to anticipate what impact a specific design choice will have on your productivity in 6 months from now (especially if you're new to the library).
+- In short, Fulcro provides a set of tools that ensures that the complexity of your application scales linearly as development continues.
+
+*** What specific problems does Fulcro solve vs other frameworks?
+
+- Client DB organization and normalization:
+- Fulcro proves libraries that work with view components that help organize the client side database (:query :ident :initial-state).
+
+- API endpoint explosion:
+- REST styles endpoints are simple and explicit but can cause some well-known problems as your application grows over time (TBD add well-known issues).
+- Pathom (and GraphQL) have been developed to address these issues.
+
+- Client data access control:
+- Some frameworks allow individual components to request data directly from the client db and save data "locally". In smaller applications with one developer, this can be convenient but this approach can quickly get out of hand in teams where developers use different strategies in different parts of the application. This can lead to situations where developers can "lose track" of the origin of a data mutation resulting in hard to track down bugs.
+
+*** Fulcro High-Level Features
+
+Goals: Identify the specific features that Fulcro provides (incomplete)
+
+- Fulcro provides a production-tested "full-stack" story.
+- Provides a suite of libraries that work well together (but few of which are absolutely required).
+- Fulcro works well with other eco-systems (e.g. 3rd party React components, etc.)
+

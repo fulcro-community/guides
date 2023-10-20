@@ -785,7 +785,7 @@ Let's have a look at a simple banking application that shows two lists - an over
 ```
 ====
 <1> We load! using Account's query because this one defines what it is we want for each of the accounts
-<2> We instruct load! to place the data where our UI expects them, i.e. inside the AccountList component instead of at the root of the client DB
+<2> We instruct load! to place the data where our UI expects them, i.e. inside the AccountList component instead of at the root of the client DB (Note: It would be more robust to use `(conj  (comp/get-ident AccountList) :account-list/accounts)` in case that we ever change the ident...)
 
 Check out the https://github.com/holyjak/minimalist-fulcro-template-backendless/blob/example/mfts-7-banking-application/src/com/example/ui.cljs[full source code] of this example.
 
