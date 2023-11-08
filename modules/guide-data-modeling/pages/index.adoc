@@ -1,0 +1,41 @@
+# Data modeling in Fulcro
+:toc:
+:toc-placement!:
+:toclevels: 2
+:description: An exploration of how to model data using data entities and links between them and how to map those onto stateful and stateless components
+
+Author: https://holyjak.cz/[Jakub Holý]
+
+toc::[]
+
+WARNING: Under construction, at very early stage
+
+How do we decide what data entities we have in our application and how there are connected? How do we decide which components are stateful, which stateless, and how they are organized? These are some of the question we will address here.
+
+[TIP]
+====
+The article https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/[Fulcro Explained: When UI Components and Data Entities Diverge] explains some of that but it covers only a small part of the problem domain. The article/repo https://github.com/holyjak/minimalist-fulcro-template-backendless/tree/experiment/data-modeling-task-app#dataui-modeling-in-fulcro-project-tasks-app[Data/UI modeling in Fulcro: Project Tasks App] demonstrates how the process of modeling happens in a real application, from a UI sketch to a proof of concept of Fulcro code.
+====
+
+## Stateful vs. stateless components
+
+As discussed in the xref:tutorial-minimalist-fulcro:index.adoc[Minimalist Fulcro Tutorial], a `defsc` component often corresponds to a logical _data entity_, which it displays - for example a `Person`. But that is not true for all UI components, especially low-level components such as buttons and form fields or generic components such as a page heading.
+
+A form is a good example. We might have a `PersonForm` defsc to edit the Person data entity. It is stateful and has a query and an ident. But the fields  and buttons in the form are "stateless," even if they need state such as the current value, errors, whether currently being edited. But this state is managed and stored at the level of the form and the Person entity itself. The form passing the relevant state to the fields, which are "stateless" defsc components without a query or ident (or possibly pure React components coming from an external library).
+
+Sometimes a component has transitory state that it does not make sense to keep in Fulcro's client DB, such as the flag indicating that the user is hovering over a button. You can use React's component-local state via Fulcro's https://book.fulcrologic.com/#_react_lifecycle_methods[`:initLocalState`] and https://cljdoc.org/d/com.fulcrologic/fulcro/3.5.13/api/com.fulcrologic.fulcro.components#set-state![comp/set-state!] and `comp/get-state`. See the https://book.fulcrologic.com/#_dynamically_rendering_into_a_canvas[Example 6. Drawing in a Canvas] in the Fulcro Developers Guide for an example.
+
+You can read about https://book.fulcrologic.com/#FormState[Fulcro's Form State Support] and you can have a look at this https://github.com/fulcrologic/fulcro-rad-semantic-ui/blob/f431d9d650444e46ac3fa36b2fde74714984c1fe/src/main/com/fulcrologic/rad/rendering/semantic_ui/text_field.cljc#L27[`ViewablePasswordField`] from Fulcro RAD.
+
+## Case studies
+
+### Splitting the event list
+
+I have a list of events at the root of my data. I would like to split the events into "error" and "warning" events and display them separately. I would also like to move the display out of `Root`, into a separate `EventList` component to simplify the root. How to do that?
+
+Some ideas:
+
+* `EventList` could be stateless and get `(map ui-event events)` from the Root as its child but that does not really satisfy what we want
+* Make `EventList` a stateful component and restructure the data accordingly
+
+...
