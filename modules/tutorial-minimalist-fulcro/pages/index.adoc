@@ -2,7 +2,7 @@
 :toc:
 :toc-placement!:
 :toclevels: 2
-:description: a minimalistic introduction to Fulcro that focuses on HOW and (almost) not WHY. The goal is provide you with the basic building blocks so that you can create full-stack web applications.
+:description: A minimalistic introduction to Fulcro that focuses on HOW and (almost) not WHY. The goal is provide you with the basic building blocks so that you can create full-stack web applications.
 
 :url-book: https://book.fulcrologic.com/
 :url-eql: https://edn-query-language.org/eql/1.0.0

@@ -1,0 +1,92 @@
+# Minimalist Fulcro Tutorial Series: Introduction
+:toc:
+:toc-placement!:
+:toclevels: 2
+:description: A minimalistic introduction to Fulcro that focuses on HOW and (almost) not WHY, centered and split around the concerns you want to address. The goal is to provide you with only those basic building blocks that you need for your web application.
+
+:url-book: https://book.fulcrologic.com/
+:url-eql: https://edn-query-language.org/eql/1.0.0
+:url-pathom: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/
+:url-pathom-resolvers: https://blog.wsscode.com/pathom/v2/pathom/2.2.0/connect/resolvers.html
+:url-divergence: https://blog.jakubholy.net/2020/fulcro-divergent-ui-data/
+
+Author: https://holyjak.cz/[Jakub Holý] & contributors
+
+Welcome to learning Fulcro, the malleable web framework for sustainable development of real-world, full-stack web applications! (You will soon understand that.)
+
+This is a _minimalist_ tutorial that aims to provide you with only what you absolutely need to get building your application. It is split by concerns so that you can easily find and pick just the parts relevant to you. Even though Fulcro is distributed as a single library for reasonsfootnote:[The overhead of versioning, releasing, and consuming many small libraries turned out not to be worth it. And thanks to Google Closure's Dead Code Elimination, it does not matter that there is code you do not use.], it is effectively a small core and a set of optional "modules" that address various extra concerns. The content of this tutorial is thus as described in the following section.
+
+TIP: You might want to have a look at my self-paced https://github.com/holyjak/fulcro-intro-wshop[workshop Introduction to creating webapps with Fulcro] to get an overview of what Fulcro offers for full-stack web applications and to get familiar with its concepts and the amazing tooling before deep-diving into learning the details.
+
+toc::[]
+
+## Contents of this tutorial
+
+Fulcro has two core parts that you almost always use together: view rendering and state management. But they actually independent. You can use Fulcro with a different view technology, https://www.youtube.com/watch?v=ng-wxe0PBEg&t=1392s[e.g. with re-frame], even a non-React one https://github.com/phronmophobic/membrane-fulcro[such as Membrane/Skia] for desktop and terminal UIs. And you can use only Fulcro's view rendering without any state management (though you would be better served by a view-only library).
+
+. Introduction (this page)
+. xref:1-view-rendering.adoc[Core: View Rendering]
+. Core: State Management - Store and read data (TBD)
+. Core: State Management - Mutate data (TBD)
+. Loading data from a backend (TBD)
+. Implementing a backend providing data (TBD)
+. Next steps (TBD)
+
+## Why Fulcro?
+
+People love Fulcro because of the short-term and long-term *productivity* and flexibility that it affords. On the one hand Fulcro allows you to quickly create a full stack web application to display and manage data and on the other hand you don't need to be afraid of ever outgrowing the framework. As your domain becomes more complex, as new needs emerge and old needs change - Fulcro has you covered. That is because it has been designed for *sustainable development* of *real-world* applications. In other words, its raison d'être is for you not to drown in complexity as time goes, your code base grows, and new needs appear. Thus it works hard to minimize accidental complexity and boilerplate code while remaining flexible. The very core of Fulcro are not some features but its practical philosophy. As the author Tony Kay puts it:
+
+> [..] to me Fulcro is about a pattern of data management, reasoning, and to some extent scalable code bases 
+> (though that is very much tied to the people doing it).
+
+What does it mean? In Fulcro, data is king. The UI is essentially just a pure function of data. When something does not work, in 90% cases you don't need to mess with the UI, you just need to look at the data. And the data is structured in such a way that it is always trivial to find the piece of data that you need or want to change. It is also hot on "local reasoning" so that you can see and understand everything relevant to the piece of UI you work with right there, where it is defined (or at most the relevant behavior is one click away).
+
+Non-trivial web applications typically need to address a number of concerns from a various stakeholders such as the users and the developers. These typically include but are not limited to:
+
+* Displaying a piece of data in the UI
+* Getting the said piece of data from a remote data source
+* Finding easily all the behavior and structure relevant to the current piece of UI / functionality
+* Informing the user while an operation is ongoing or if it failed
+* Providing the feeling of responsiveness via optimistic UI updates (i.e. behave as if the remote operation succeeded and recover later if it fails)
+* Caching remote data
+* Troubleshooting the state of the application and its past transitions
+
+Your needs might be simple at first and you may be tempted to pick a simple, focused library, e.g. one that only does view rendering, such as the excellent Reagent. Eventually it gets more complicated and you will need better defined state management and add another library, perhaps re-frame. As the amount of interaction with the backend grows, you will spend more and more effort juggling and placing data, handling progress indicators, and dealing with errors. Maybe you add few other libraries to ease some of the pain points. They were mostly not designed for each other but it sort of works, with some plumbing. But your code base grows, navigating it becomes harder, finding all the pieces of code relevant to a particular functionality becomes nontrivial, onboarding new developers is hard.
+
+You could instead pick Fulcro. Your needs are simple so you only need to learn and adopt its very core. As the application grows and needs expand, you adopt more of Fulcro to satisfy them. All works perfectly together. No extra boilerplate. You truly start to appreciate that you can reason locally and navigate easily through control/command-click. Nirvana. 
+
+### The way Fulcro is
+
+NOTE: We discuss here Fulcro as a full-stack solution. But as mentioned above, you do not need to adopt all those parts (until you do need them). 
+
+This focus on enabling sustainable development speed over the long-term led to the following decisions:
+
+* UI = f(state) - React came with the idea that the UI is just a pure function of data but Fulcro really means it. When you have a problem, look at the data, not the UI. 99% of the time it is there.
+* UI components declare their data needs ("query") - because nobody else knows or should care about what data the component needs. And these queries are composable so that we can fetch the data needed by the whole UI (sub)tree at once.
+* Graph API: The UI is a a tree (i.e. a graph) of components and therefore the composed query is also a tree. The server can understand and fulfill such a graph query with a tree of data - exactly the data the UI needs. Not the mess of N separate REST endpoints that you need to query individually and combine and prune the data on the frontend. (Reportedly, a perfectly designed REST APIs do not suffer from this problem. But they are rarer than unicorns.)
+* Web applications are inherently full-stack and thus a framework should provide an integrated solution for fetching data from the server - including the ability to track its status - and for triggering actions ("mutations") with potentially both local and remote constituents. We should not pretend that this is not our problem, as many React frameworks do.
+* Normalized client-side DB: Even though the UI needs a tree of data and the server returns just that, we want the data cached in a https://en.wikipedia.org/wiki/Database_normalization[normalized] cache - which we call client DB - on the frontend. For decades, data normalization has been the established best practice for data access in databases, and for good reasons. In particular, it prevents a whole class of issues with out-of-sync data. When we mutate a particular piece of data, we want the new value reflected everywhere where it is used, without having to manually go through all those places. And such a normalized database also makes it trivial to find just the piece of data you want to change (all you need is the entity's name, its ID value, and the property name).
+
+Fulcro is also quite well designed. It is based on a small set of orthogonal building blocks and it doesn't hide anything from you - you can always go a level deeper into its internals to achieve what you need. Its flexibility and customizability is surprising - all of the critical features from network interaction to rendering optimization are easily customizable. It is also very careful about providing only the tools that are generally applicable and avoiding "features" that might help some people but stand in the way of others. But thanks to the aforementioned flexibility, you can implement what you need for your unique use case yourself. Developers rightly see frameworks as tools that provide an initial boost but eventually become straitjackets that limit them, when the application's unique needs do not align perfectly with what the authors foresaw. Fulcro suffers from this far less then any other framework, as long as you are aligned with its overall philosophy, because it allows you to customize so much. (But of course the more you want to change the more work it will require.)
+
+What do users say (redacted slightly for correctness):
+
+> I'm positively surprised, almost shocked... Not only because it seems to be very carefully crafted and designed, but also because it manifests several concepts, practices and intuitions that I've been using and gathering, and then goes way beyond that by refining and composing them into a whole, adaptable system. I so far feel blessed and lucky, because Fulcro validates my half baked tools, ideas and practices, but also because it seems to be a framework that I can build on with confidence.
+>
+> -- Denis Baudinot, a freelance full-stack developer, December 2020
+
+****
+To learn more about the reasoning behind Fulcro, listen to the ClojureScript Podcast https://podcasts.apple.com/us/podcast/s4-e6-fulcro-with-tony-kay-part-1/id1461500416?i=1000479361034[S4 E6 Fulcro with Tony Kay (Part 1)] (2020), which explores the origins of and key motivation for Fulcro, and read the {url-book}#_getting_started[Ch. 4. Getting Started] of the Fulcro Developers Guide, which demonstrates how various problems are made easier thanks to the way Fulcro is. To learn to use Fulcro, read on :-).
+****
+
+### Fulcro or re-frame?
+
+If you know or have heard about the popular web framework http://day8.github.io/re-frame/[re-frame], you might wonder whether to pick that or Fulcro. Tony Kay has an answer (elided):
+
+> I would claim that Fulcro's central core (for UI) is actually *simpler* (not necessarily easier, at first) than Reframe. There is a normalized db, a query, and a UI tree. There are no side-effects mixed into the render, etc. Every modification goes through a single concept: the mutation. The fact that this handles full-stack equally as well as client-only means there is even less to deal with *conceptually*. BUT, you do have to learn the nuances (query/ident/initial state are the three big concepts). Fulcro is partially hard because I've provided so many parts. But 80% of them are completely optional, [..] Fulcro is opinionated where it is useful, and completely configurable where it should be flexible.
+>
+> [..] Another fair point: If it's a small project with little or no I/O, I'd agree with Reframe. It's very tractable and easy for that kind of project. That said, I've had more than one consulting client come to me for help porting from Reframe to Fulcro when their project got bigger.
+>
+> -- https://www.reddit.com/r/Clojure/comments/kibrfs/comment/ggvih7x/[Tony Kay on Reddit, 2021]
+
+// Other pros: Docs - in code + Guide
