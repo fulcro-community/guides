@@ -218,7 +218,7 @@ Notice a couple of things about the example above:
 nested data. The map goes *before* the name of the item that you want to
 join on.
 * We only asked for the `:todo/label` in the query. That's why the result
-do not include the properties of `:todo/id` and `:todo/status`
+does not include the properties of `:todo/id` and `:todo/status`
 * The syntax for an EQL join i.e. a map. The map's key is the item you
 want to "join on" and the map's value is a vector of the properties you
 want in your result.
