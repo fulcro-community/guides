@@ -66,7 +66,7 @@ EQL is a must.
 
 == Getting Started with EQL
 
-Before diving into the details and featured of EQL, let's explore some
+Before diving into the details and features of EQL, let's explore some
 basic EQL queries so we can get a feel for the syntax. If you are
 familiar with Clojure, EQL will probably look quite familiar as it uses
 many common Clojure data structures namely, keywords `:keyword`, vectors
