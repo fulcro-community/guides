@@ -44,7 +44,7 @@ It is helpful to know a little about the principles of *GraphQL* (see this https
 
 It is useful to read the https://blog.wsscode.com/pathom/v2/pathom/2.2.0/introduction.html[Pathom v2 introduction] and learn about {url-pathom-resolvers}[Pathom resolvers] but if you are short on time, the minimum necessary knowledge is presented here.
 
-Fulcro fetches data via EQL queries and changes them via EQL mutations. Pathom is the server-side part that understands and answers these queries and applies these mutations. Its key element are _resolvers_ that return a (possibly nested) map representing the data they have been asked for and possibly take an input and/or parameters. For our purposes, we care only about global resolvers and ident resolvers, as demonstrated below:
+Fulcro fetches data via EQL queries and changes it via EQL mutations, which in general have a local section and a remote section. Pathom is the server-side part that understands and answers these queries and applies the remote part of mutations. Its key element are _resolvers_ that return a (possibly nested) map representing the data they have been asked for and possibly take an input and/or parameters. For our purposes, we care only about global resolvers and ident resolvers, as demonstrated below:
 
 ```clojure
 ;; A *global resolver* has no input; we can simply query for [:all-people] and get them
